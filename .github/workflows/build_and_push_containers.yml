@@ -1,0 +1,31 @@
+name: Build & Push Container Images
+
+on:
+  push:
+    tags:
+      - v*
+  workflow_dispatch:
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+    
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Apptainer
+        run: |
+          .github/scripts/install_apptainer.sh
+      - name: Check Apptainer installation
+        run: apptainer --version
+      - name: Build images
+        run: |
+          .github/scripts/build_container_images.sh
+      - name: Push images
+        run: |
+          .github/scripts/push_container_images.sh
