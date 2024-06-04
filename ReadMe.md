@@ -1,3 +1,5 @@
+[![Tests](https://github.com/BCCDC-PHL/fluviewer-nf/actions/workflows/tests.yml/badge.svg)](https://github.com/BCCDC-PHL/fluviewer-nf/actions/workflows/tests.yml)
+
 # FluViewer-nf
 
 This is a Nextflow pipeline for running the FluViewer analysis tool (https://github.com/KevinKuchinski/FluViewer) and other custom modules to obtain consensus sequences, HA and NA subtypes, clade calls, and amino acid mutations for Influenza A WGS.  
