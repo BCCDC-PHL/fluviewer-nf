@@ -15,8 +15,11 @@ process fastp {
 
     script:
     """
-    printf -- "- process_name: fastp\\n" > ${sample_id}_fastp_provenance.yml
-    printf -- "  tool_name: fastp\\n  tool_version: \$(fastp --version 2>&1 | cut -d ' ' -f 2)\\n" >> ${sample_id}_fastp_provenance.yml
+    printf -- "- process_name: fastp\\n"  >> ${sample_id}_fastp_provenance.yml
+    printf -- "  tools:\\n"               >> ${sample_id}_fastp_provenance.yml
+    printf -- "    - tool_name: fastp\\n" >> ${sample_id}_fastp_provenance.yml
+    printf -- "      tool_version: \$(fastp --version 2>&1 | cut -d ' ' -f 2)\\n" >> ${sample_id}_fastp_provenance.yml
+
     fastp \
       -t ${task.cpus} \
       -i ${reads_1} \
@@ -32,16 +35,13 @@ process fastp {
 }
 
 
-//printf -- "- process_name: fastp\\n" > ${sample_id}_fastp_provenance.yml
-//printf -- "  tool_name: fastp\\n  tool_version: \$(fastp --version 2>&1 | cut -d ' ' -f 2)\\n" >> ${sample_id}_fastp_provenance.yml
-
 process fastp_json_to_csv {
 
   tag { sample_id }
 
   executor 'local'
 
-  publishDir params.versioned_outdir ? "${params.outdir}/${sample_id}/${params.pipeline_short_name}-v${params.pipeline_minor_version}" : "${params.outdir}/${sample_id}", pattern: "${sample_id}_fastp.csv", mode: 'copy'
+  publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fastp.csv", mode: 'copy'
 
   input:
   tuple val(sample_id), path(fastp_json)
