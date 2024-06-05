@@ -38,6 +38,12 @@ def check_expected_files_exist(output_dir, sample_ids):
     """
     for sample_id in sample_ids:
         expected_files = [
+            f"fastq/fluviewer-nf-v0.2/{sample_id}/{sample_id}_fluviewer_alignment.bam",
+            f"fastq/fluviewer-nf-v0.2/{sample_id}/{sample_id}_fluviewer_alignment.bam.bai",
+            f"fastq/fluviewer-nf-v0.2/{sample_id}/{sample_id}_fluviewer_depth_of_cov.png",
+            f"fastq/fluviewer-nf-v0.2/{sample_id}/{sample_id}_fluviewer_mapping_refs.fa",
+            f"fastq/fluviewer-nf-v0.2/{sample_id}/{sample_id}_fluviewer_report.tsv",
+            f"fastq/fluviewer-nf-v0.2/{sample_id}/{sample_id}_genoflu.tsv",
         ]
 
         for expected_file in expected_files:
