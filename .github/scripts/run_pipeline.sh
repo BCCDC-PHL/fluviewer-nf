@@ -10,10 +10,14 @@ conda activate base
 
 # Check for a sign that we're in the GitHub Actions environment.
 # Prevents these settings from being applied in other environments.
-if [ -n "${GITHUB_ACTIONS}" ]; then 
+if [ -z "${GITHUB_ACTIONS}" ]; then 
+    echo "Not in GitHub Actions environment. Will not modify nextflow.config or FluViewer.nf."
+else
+    echo "In GitHub Actions environment. Modifying nextflow.config and FluViewer.nf."
     sed -i 's/cpus = 8/cpus = 4/g' nextflow.config
     sed -i '/memory/d' modules/FluViewer.nf
 fi
+
 nextflow run main.nf \
 	 -profile conda \
 	 --cache ${HOME}/.conda/envs \
