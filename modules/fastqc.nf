@@ -13,9 +13,9 @@ process fastqc {
 
     script:
     """
-    printf -- "- process_name: fastqc\\n"   >> ${sample_id}_fastqc_provenance.yml
+    printf -- "- process_name: fastqc\\n"  >> ${sample_id}_fastqc_provenance.yml
     printf -- "  tools:\\n"                >> ${sample_id}_fastqc_provenance.yml
-    printf -- "    - tool_name: fastqc\\n" >>
+    printf -- "    - tool_name: fastqc\\n" >> ${sample_id}_fastqc_provenance.yml
     printf -- "      tool_version: \$(fastqc --version 2>&1 | sed -n '1 p')\\n" >> ${sample_id}_fastqc_provenance.yml
 
     mkdir -p ./tmp

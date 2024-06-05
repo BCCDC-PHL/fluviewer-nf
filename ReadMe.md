@@ -68,7 +68,7 @@ For a full list of optional arguments, see: https://github.com/KevinKuchinski/Fl
 **Example command:**
 ```
 nextflow run BCCDC-PHL/fluviewer-nf \
-  -r v0.1.0 \
+  -r v0.2.2 \
   -profile conda \
   --cache ~/.conda/envs \
   --fastq_input /path/to/your_fastqs \
@@ -127,12 +127,9 @@ Output for each run includes:
 For each pipeline invocation, each sample will produce a `provenance.yml` file with the following contents.  Note the below is a contrived example.  
 
 ```yml
-- process_name: FluViewer
-  tool_name: FluViewer
-  tool_version: FluViewer v0.0.2
-  database used: FluViewer_db_full_20220915.fasta
-  database_path: /home/{USER}/Flu/ref/FluViewer_db_full_20220915.fasta
-  database sha256: 55b33afa21ad44ed1e6db896cf420fae6b1524c0ad205775a1ce9dd11595905d
+- pipeline_name: BCCDC-PHL/FluViewer-nf
+  pipeline_version: 0.2.2
+  timestamp_analysis_start: 2023-11-21T05:43:25.541743
 - input_filename: {Sample}_R1.fastq.gz
   input_path: /home/{USER{}}/Flu/test_data/test_production_run/{Sample}_R1.fastq.gz
   sha256: 47380e49f10374660a2061d3571efe5339401484e646c2b47896fa701dbcf0a8
@@ -140,14 +137,22 @@ For each pipeline invocation, each sample will produce a `provenance.yml` file w
   input_path: /home/{USER}/Flu/test_data/test_production_run/{Sample}.fastq.gz
   sha256: 39c95fd26af111ee9a6caeb840a7aced444b657550efea3ab7f74add0b30f69d
 - process_name: fastp
-  tool_name: fastp
-  tool_version: 0.23.1
+  tools:
+    - tool_name: fastp
+      tool_version: 0.23.1
 - process_name: cutadapt
-  tool_name: cutadapt
-  tool_version: 4.1
-- pipeline_name: BCCDC-PHL/FluViewer-nf
-  pipeline_version: 0.2.0
-- timestamp_analysis_start: 2023-11-21T05:43:25.541743
+  tools:
+    - tool_name: cutadapt
+      tool_version: 4.1
+- process_name: fluviewer
+  tools:
+    - tool_name: FluViewer
+      tool_version: FluViewer v0.0.2
+  databases:
+    - database_name: FluViewer_db_full_20220915.fasta
+      database_path: /home/{USER}/Flu/ref/FluViewer_db_full_20220915.fasta
+      database_sha256: 55b33afa21ad44ed1e6db896cf420fae6b1524c0ad205775a1ce9dd11595905d
+
 - process_name: nextclade
   tool_name: nextclade
   tool_version: 2.9.1
