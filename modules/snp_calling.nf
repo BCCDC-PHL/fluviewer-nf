@@ -1,4 +1,4 @@
-process SNP_CALLING {
+process snp_calling {
 
     errorStrategy 'ignore'
 
