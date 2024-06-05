@@ -92,7 +92,7 @@ workflow {
    
     pull_genoflu(params.genoflu_github_url)
 
-    checkout_genoflu(pull_geoflu.out.repo, params.genoflu_version)
+    checkout_genoflu(pull_genoflu.out.repo, params.genoflu_version)
 
     genoflu(fluviewer.out.consensus_main.combine(pull_genoflu.out.repo))
 
