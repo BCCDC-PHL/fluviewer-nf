@@ -3,8 +3,10 @@
 .github/data/fluviewer_db
 .nextflow*
 work
-test*
+test_input
+test_output
 test_data/
+./test*
 ref/
 input_test/
 output_test/
