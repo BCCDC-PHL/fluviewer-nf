@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-source /home/analysis/.bashrc
+source ${HOME}/.bashrc
  
 eval "$(conda shell.bash hook)"
 
