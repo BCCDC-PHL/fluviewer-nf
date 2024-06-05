@@ -2,7 +2,7 @@ process fluviewer {
 
     tag { sample_id }
 
-    memory  { 50.GB * task.attempt } 
+    memory  { 50.GB * task.attempt }
     errorStrategy { (task.exitStatus == 2 && task.attempt <= maxRetries) ? 'retry' : 'ignore' } 
     maxRetries 5
 

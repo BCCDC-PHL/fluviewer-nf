@@ -8,10 +8,12 @@ eval "$(conda shell.bash hook)"
 
 conda activate base
 
-sed -i 's/cpus = 8/cpus = 4/g' nextflow.config
-sed -i "s/memory = '32 GB'/memory = '2 GB'/g" nextflow.config
-sed -i 's/memory  { 50.GB * task.attempt }//g' modules/FluViewer.nf
-
+# Check for a sign that we're in the GitHub Actions environment.
+# Prevents these settings from being applied in other environments.
+if [ -n "${GITHUB_ACTIONS}" ]; then 
+    sed -i 's/cpus = 8/cpus = 4/g' nextflow.config
+    sed -i '/memory/d' modules/FluViewer.nf
+fi
 nextflow run main.nf \
 	 -profile conda \
 	 --cache ${HOME}/.conda/envs \
