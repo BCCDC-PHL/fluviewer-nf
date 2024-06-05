@@ -1,4 +1,4 @@
-process GENOFLU {
+process genoflu {
 
     tag { sample_id }
 
@@ -29,7 +29,7 @@ process GENOFLU {
     """
 }
 
-process PULL_GENOFLU {
+process pull_genoflu {
     
     executor 'local'
     storeDir "${params.genoflu_cache}"
@@ -46,8 +46,7 @@ process PULL_GENOFLU {
     """
 }
 
-process CHECKOUT_GENOFLU {
-
+process checkout_genoflu {
 
     input:
     path(genoflu_path)

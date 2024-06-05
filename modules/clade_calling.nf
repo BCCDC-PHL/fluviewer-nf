@@ -1,4 +1,4 @@
-process CLADE_CALLING {
+process clade_calling {
 
     conda "${projectDir}/environments/nextclade.yml"
 

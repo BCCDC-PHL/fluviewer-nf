@@ -3,15 +3,6 @@
 /*
  *   A nextflow wrapper for running FluViewer
  *   -----------------------------------------
-
- == V1  ==
-This pipeline will run FluViewer on a set of fastq files in a baseDir.
-Each output will be its own directory.
-Future versions will add in:
-- fastp to remove adapters and produce QC
-- multqc to read the results of this
-- a script to scrape together results and produce an output csv
-
  */
 
  import java.time.LocalDateTime
@@ -23,14 +14,14 @@ include { pipeline_provenance } from './modules/provenance.nf'
 include { collect_provenance }  from './modules/provenance.nf'
 include { fastp }               from './modules/fastp.nf'
 include { cutadapt}             from './modules/cutadapt.nf'
-include { FluViewer }           from './modules/FluViewer.nf'
+include { fluviewer }           from './modules/FluViewer.nf'
 include { multiqc }             from './modules/multiqc.nf'
-include { FASTQC }              from './modules/fastqc.nf'
-include { CLADE_CALLING }       from './modules/clade_calling.nf'
-include { SNP_CALLING }         from './modules/snp_calling.nf'
-include { PULL_GENOFLU }        from './modules/genoflu.nf'
-include { CHECKOUT_GENOFLU }    from './modules/genoflu.nf'
-include { GENOFLU }             from './modules/genoflu.nf'
+include { fastqc }              from './modules/fastqc.nf'
+include { clade_calling }       from './modules/clade_calling.nf'
+include { snp_calling }         from './modules/snp_calling.nf'
+include { pull_genoflu }        from './modules/genoflu.nf'
+include { checkout_genoflu }    from './modules/genoflu.nf'
+include { genoflu }             from './modules/genoflu.nf'
 
 
 // prints to the screen and to the log
@@ -85,25 +76,25 @@ workflow {
     // Clean up reads - remove adapters (fastp) and primers (cutadapt)
     fastp(ch_fastq_input)
     cutadapt(fastp.out.trimmed_reads.combine(ch_primers))
-    FASTQC(cutadapt.out.primer_trimmed_reads)
+    fastqc(cutadapt.out.primer_trimmed_reads)
 
     // Run FluViewer 
-    FluViewer(cutadapt.out.primer_trimmed_reads.combine(ch_db))
+    fluviewer(cutadapt.out.primer_trimmed_reads.combine(ch_db))
 
-    //Collect al the relevant filesfor MULTIQC
-    ch_fastqc_collected = FASTQC.out.zip.map{ it -> [it[1], it[2]]}.collect()
+    //Collect al the relevant filesfor multiqc
+    ch_fastqc_collected = fastqc.out.zip.map{ it -> [it[1], it[2]]}.collect()
     multiqc(fastp.out.json.mix( cutadapt.out.log, ch_fastqc_collected ).collect().ifEmpty([]) )
  
     //Call clades for H1 and H3 samples
-    CLADE_CALLING(FluViewer.out.consensus_seqs)
+    clade_calling(fluviewer.out.consensus_seqs)
      
-    SNP_CALLING(FluViewer.out.consensus_main, ch_reference_db)
+    snp_calling(fluviewer.out.consensus_main, ch_reference_db)
    
-    PULL_GENOFLU(params.genoflu_github_url)
+    pull_genoflu(params.genoflu_github_url)
 
-    CHECKOUT_GENOFLU(PULL_GENOFLU.out.repo, params.genoflu_version)
+    checkout_genoflu(pull_geoflu.out.repo, params.genoflu_version)
 
-    GENOFLU(FluViewer.out.consensus_main.combine(PULL_GENOFLU.out.repo))
+    genoflu(fluviewer.out.consensus_main.combine(pull_genoflu.out.repo))
 
 
     //

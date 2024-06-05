@@ -11,6 +11,5 @@ process multiqc {
     script:
     """
     multiqc . -n ${params.run_name}_multiqc_report.html
-    
     """
 }
