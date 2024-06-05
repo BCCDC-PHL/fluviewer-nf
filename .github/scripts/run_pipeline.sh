@@ -10,7 +10,7 @@ conda activate base
 
 sed -i 's/cpus = 8/cpus = 4/g' nextflow.config
 sed -i "s/memory = '32 GB'/memory = '2 GB'/g" nextflow.config
-sed -i 'memory  { 50.GB * task.attempt }//g' modules/FluViewer.nf
+sed -i 's/memory  { 50.GB * task.attempt }//g' modules/FluViewer.nf
 
 nextflow run main.nf \
 	 -profile conda \
