@@ -1,6 +1,6 @@
 [![Tests](https://github.com/BCCDC-PHL/fluviewer-nf/actions/workflows/tests.yml/badge.svg)](https://github.com/BCCDC-PHL/fluviewer-nf/actions/workflows/tests.yml)
 
-# FluViewer-nf
+# fluviewer-nf
 
 This is a Nextflow pipeline for running the FluViewer analysis tool (https://github.com/KevinKuchinski/FluViewer) and other custom modules to obtain consensus sequences, HA and NA subtypes, clade calls, and amino acid mutations for Influenza A WGS.  
 
@@ -67,7 +67,13 @@ For a full list of optional arguments, see: https://github.com/KevinKuchinski/Fl
 
 **Example command:**
 ```
-nextflow run FluViewer_installation/main.nf -r 0.1.0 -profile --cache ~/.conda/envs/ --fastq_input flu_A_reference_collection/ --db ref/FluViewer_db_full_20220915.fasta --outdir [outdir]
+nextflow run BCCDC-PHL/fluviewer-nf \
+  -r v0.1.0 \
+  -profile conda \
+  --cache ~/.conda/envs \
+  --fastq_input /path/to/your_fastqs \
+  --db /path/to/FluViewer_db.fa \
+  --outdir /path/to/output_dir
 ```
 
 ## Output

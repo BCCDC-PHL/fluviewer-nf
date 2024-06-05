@@ -1,3 +1,6 @@
+.github/data/assemblies
+.github/data/fastq
+.github/data/fluviewer_db
 .nextflow*
 work
 test*

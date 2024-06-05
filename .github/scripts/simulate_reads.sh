@@ -13,7 +13,7 @@ while IFS=',' read -r sample_id assembly; do
     art_illumina \
 	--paired \
 	--in ${assembly} \
-	--fcov 12 \
+	--fcov 100 \
 	--len 150 \
 	--mflen 400 \
 	--sdev 100 \

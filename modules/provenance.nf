@@ -4,7 +4,7 @@ process collect_provenance {
 
   executor 'local'
 
-  publishDir params.versioned_outdir ? "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/Provenance_files" : "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/Provenance_files", pattern: "${sample_id}_*_provenance.yml", mode: 'copy'
+  publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/Provenance_files", pattern: "${sample_id}_*_provenance.yml", mode: 'copy'
 
   input:
   tuple val(sample_id), path(provenance_files)
@@ -20,18 +20,22 @@ process collect_provenance {
 
 process pipeline_provenance {
 
-  tag { pipeline_name + " / " + pipeline_version }
+    tag { pipeline_name + " / " + pipeline_version }
 
-  executor 'local'
+    executor 'local'
 
-  input:
-  tuple val(pipeline_name), val(pipeline_version), val(analysis_start)
+    input:
+    tuple val(session_id), val(run_name), val(pipeline_name), val(pipeline_version), val(timestamp_analysis_start)
 
-  output:
-  file("pipeline_provenance.yml")
+    output:
+    file("pipeline_provenance.yml")
 
-  script:
-  """
-  printf -- "- pipeline_name: ${pipeline_name}\\n  pipeline_version: ${pipeline_version}\\n- timestamp_analysis_start: ${analysis_start}\\n" > pipeline_provenance.yml
-  """
+    script:
+    """
+    printf -- "- pipeline_name: ${pipeline_name}\\n"                       >> pipeline_provenance.yml
+    printf -- "  pipeline_version: ${pipeline_version}\\n"                 >> pipeline_provenance.yml
+    printf -- "  nextflow_session_id: ${session_id}\\n"                    >> pipeline_provenance.yml
+    printf -- "  nextflow_run_name: ${run_name}\\n"                        >> pipeline_provenance.yml
+    printf -- "  timestamp_analysis_start: ${timestamp_analysis_start}\\n" >> pipeline_provenance.yml
+    """
 }

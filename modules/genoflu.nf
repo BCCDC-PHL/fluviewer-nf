@@ -14,10 +14,12 @@ process GENOFLU {
 
     script:
     """
-    printf -- "- process_name: genoflu\\n" > ${sample_id}_genoflu_provenance.yml
-    printf -- "  tool_name: genoflu\\n  tool_version: \$(genoflu.py --version | cut -d' ' -f3)\\n" >> ${sample_id}_genoflu_provenance.yml
+    printf -- "- process_name: genoflu\\n" >> ${sample_id}_genoflu_provenance.yml
+    printf -- "  tools:\\n"                >> ${sample_id}_genoflu_provenance.yml
+    printf -- "    - tool_name: genoflu\\n"    >> ${sample_id}_genoflu_provenance.yml
+    printf -- "      tool_version: \$(genoflu.py --version | cut -d' ' -f3)\\n" >> ${sample_id}_genoflu_provenance.yml
 
-	genoflu.py \
+    genoflu.py \
 	-f ${consensus_seqs} \
 	-i ${genoflu_path}/dependencies/fastas/ \
 	-c ${genoflu_path}/dependencies/genotype_key.xlsx \
@@ -28,7 +30,8 @@ process GENOFLU {
 }
 
 process PULL_GENOFLU {
-
+    
+    executor 'local'
     storeDir "${params.genoflu_cache}"
 
     input:
