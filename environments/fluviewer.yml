@@ -1,4 +1,4 @@
-name: FluViewer
+name: fluviewer-nf-FluViewer
 channels:
   - conda-forge
   - bioconda

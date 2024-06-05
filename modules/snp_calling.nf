@@ -14,10 +14,18 @@ process snp_calling {
     output:
     tuple val(sample_id), path("${sample_id}_*mutations.tsv"), emit: mutations
     tuple val(sample_id), path("${sample_id}/*blastx.tsv"), emit: blast, optional: true
-    // tuple val(sample_id), path("${sample_id}_clade_provenance.yml"), emit: provenance, optional: true
+    tuple val(sample_id), path("${sample_id}_snp_calling_provenance.yml"), emit: provenance, optional: true
 
     script:
-    """ 
+    """
+    printf -- "- process_name: snp_caling\\n" >> ${sample_id}_snp_calling_provenance.yml
+    printf -- "  tools:\\n"                   >> ${sample_id}_snp_calling_provenance.yml
+    printf -- "    - tool_name: blastx\\n"    >> ${sample_id}_snp_calling_provenance.yml
+    printf -- "      tool_version: \$(blastx -version | head -n 1)\\n" >> ${sample_id}_snp_calling_provenance.yml
+    printf -- "  databases:\\n"               >> ${sample_id}_snp_calling_provenance.yml
+    printf -- "    - database_name: ${blastx_db_name}\\n" >> ${sample_id}_snp_calling_provenance.yml
+
+    
     export BLASTDB="${blastx_db_path}"
     blastx -query ${consensus_seqs} -db ${blastx_db_name} -outfmt 6 > ${sample_id}_blastx.tsv && 
 

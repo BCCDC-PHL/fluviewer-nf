@@ -107,8 +107,9 @@ workflow {
     ch_provenance = ch_provenance.join(fastp.out.provenance).map{ it ->         [it[0], it[1] << it[2]] }
     ch_provenance = ch_provenance.join(cutadapt.out.provenance).map{ it ->      [it[0], it[1] << it[2]] }
     ch_provenance = ch_provenance.join(fluviewer.out.provenance).map{ it ->     [it[0], it[1] << it[2]] }    
-    // ch_provenance = ch_provenance.join(CLADE_CALLING.out.provenance).map{ it -> [it[0], it[1] << it[2]] }
-    // ch_provenance = ch_provenance.join(GENOFLU.out.provenance).map{ it ->       [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(clade_calling.out.provenance).map{ it -> [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(snp_calling.out.provenance).map{ it ->   [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(genoflu.out.provenance).map{ it ->       [it[0], it[1] << it[2]] }
     collect_provenance(ch_provenance)
 
 }
