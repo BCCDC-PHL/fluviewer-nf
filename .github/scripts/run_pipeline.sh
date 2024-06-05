@@ -2,6 +2,10 @@
 
 set -eo pipefail
 
+source /home/analysis/.bashrc
+ 
+eval "$(conda shell.bash hook)"
+
 sed -i 's/cpus = 8/cpus = 4/g' nextflow.config
 sed -i "s/memory = '32 GB'/memory = '2 GB'/g" nextflow.config 
 
