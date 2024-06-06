@@ -18,10 +18,10 @@ else
     sed -i '/memory/d' modules/FluViewer.nf
 fi
 
-nextflow run main.nf \
+nextflow -log artifacts/nextflow.log \
+	 run main.nf \
 	 -profile conda \
 	 --cache ${HOME}/.conda/envs \
 	 --fastq_input .github/data/fastq \
 	 --db .github/data/fluviewer_db/FluViewer_db_v_0_1_8.fa \
-	 --outdir .github/data/test_output \
-	 -with-log artifacts/nextflow.log
+	 --outdir .github/data/test_output
