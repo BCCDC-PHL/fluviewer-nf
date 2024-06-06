@@ -14,11 +14,16 @@ process clade_calling {
 
     output:
     tuple val(sample_id), path("*nextclade*"), emit: nextclade, optional: true
-    tuple val(sample_id), path("${sample_id}_clade_provenance.yml"), emit: provenance, optional: true
+    tuple val(sample_id), path("${sample_id}_clade_calling__provenance.yml"), emit: provenance, optional: true
 
     script:
-
     """
+    printf -- "process_name: nextclade\\n"  >> ${sample_id}_clade_calling_provenance.yml
+    printf -- "tools:\\n"                   >> ${sample_id}_clade_calling_provenance.yml
+    printf -- "  - tool_name: nextclade\\n" >> ${sample_id}_clade_calling_provenance.yml
+    printf -- "    tool_version: \$(nextclade --version 2>&1  | cut -d ' ' -f 2)\\n" >> ${sample_id}_clade_calling_provenance.yml
+    printf -- "    subcommand: run\\n"       >> ${sample_id}_clade_calling_provenance.yml
+
     [ ! -f  ${sample_id}_HA_consensus.fa ] && ln -sf *HA_consensus.fa ${sample_id}_HA_consensus.fa
 
     FOUND=true
@@ -54,9 +59,5 @@ process clade_calling {
         VERSION="NONE_INVALID_HA_TYPE\\n"
     fi 
 
-    printf -- "- process_name: nextclade\\n" > ${sample_id}_clade_provenance.yml
-    printf -- "  tool_name: nextclade\\n  tool_version: \$(nextclade --version 2>&1  | cut -d ' ' -f 2)\\n" >> ${sample_id}_clade_provenance.yml
-    printf -- "  Dataset location: \$LOCATION" >> ${sample_id}_clade_provenance.yml
-    printf -- "  Dataset version: \$VERSION" >> ${sample_id}_clade_provenance.yml
     """
 }
