@@ -36,26 +36,28 @@ process fluviewer {
     script:
     garbage_collection = params.keep_interfiles ? '-g' : ''
     """
-    printf -- "- process_name: fluviewer\\n"                  >> ${sample_id}_FluViewer_provenance.yml
-    printf -- "  tools:\\n"                                   >> ${sample_id}_FluViewer_provenance.yml
-    printf -- "    - tool_name: FluViewer\\n"                 >> ${sample_id}_FluViewer_provenance.yml
+    printf -- "- process_name: fluviewer\\n"                  >> ${sample_id}_fluviewer_provenance.yml
+    printf -- "  tools:\\n"                                   >> ${sample_id}_fluviewer_provenance.yml
+    printf -- "    - tool_name: FluViewer\\n"                 >> ${sample_id}_fluviewer_provenance.yml
     printf -- "      tool_version: \$(FluViewer | sed -n '4 p')\\n" >> ${sample_id}_FluViewer_provenance.yml
-    printf -- "  databases:\\n"                               >> ${sample_id}_FluViewer_provenance.yml
-    printf -- "    - database_name: ${db}\\n"                 >> ${sample_id}_FluViewer_provenance.yml
-    printf -- "      database_path: \$(readlink -f ${db})\\n" >> ${sample_id}_FluViewer_provenance.yml
-    printf -- "      database_sha256: \$(shasum -a 256 ${db}|awk '{print \$1}')\\n" >> ${sample_id}_FluViewer_provenance.yml
+    printf -- "  databases:\\n"                               >> ${sample_id}_fluviewer_provenance.yml
+    printf -- "    - database_name: ${db}\\n"                 >> ${sample_id}_fluviewer_provenance.yml
+    printf -- "      database_path: \$(readlink -f ${db})\\n" >> ${sample_id}_fluviewer_provenance.yml
+    printf -- "      database_sha256: \$(shasum -a 256 ${db}|awk '{print \$1}')\\n" >> ${sample_id}_fluviewer_provenance.yml
   
     EXITCODE=0
-    (FluViewer \
+    (fluviewer \
 	${garbage_collection} \
-	-T ${task.cpus} \
-	-f ${reads_1} -r ${reads_2} \
-	-n ${sample_id}_fluviewer \
-	-d ${db} \
-	-D ${params.min_depth}  \
-	-q ${params.min_q} \
-	-i ${params.min_ident} \
-	-M 40 && EXITCODE=\$?) \
+	--threads ${task.cpus} \
+	--forward-reads ${reads_1} \
+	--reverse-reads ${reads_2} \
+	--outdir . \
+	--output-name ${sample_id} \
+	--db ${db} \
+	--min-depth ${params.min_depth}  \
+	--min-mapping-quality ${params.min_q} \
+	--min-identity ${params.min_ident} \
+	--max-memory 40 && EXITCODE=\$?) \
 	|| EXITCODE=\$?
 
     echo "Extracting NA and HA consensus sequences..."
