@@ -15,4 +15,4 @@ dependencies:
   - pandas=2.0.3
   - seaborn=0.12.2
   - pip:
-    - git+https://github.com/BCCDC-PHL/FluViewer.git@v0.11.1-1
+    - git+https://github.com/BCCDC-PHL/FluViewer.git@v0.1.11-1
