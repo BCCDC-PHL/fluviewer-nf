@@ -14,7 +14,7 @@ process clade_calling {
 
     output:
     tuple val(sample_id), path("*nextclade*"), emit: nextclade, optional: true
-    tuple val(sample_id), path("${sample_id}_clade_calling__provenance.yml"), emit: provenance, optional: true
+    tuple val(sample_id), path("${sample_id}_clade_calling_provenance.yml"), emit: provenance, optional: true
 
     script:
     """
