@@ -12,7 +12,7 @@ def flex_translate(nt_seq, debug=False):
 		- An integer indicating the best reading frame that was used for translation (0, 1, or 2)
 		- An integer indicating the number of stop codons in this best translation candidate
 	"""
-	min_count = np.Inf
+	min_count = np.inf
 	best_seq = None
 	best_frame = -1
 
