@@ -38,13 +38,13 @@ process fluviewer {
     OUTPATH="${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}"
 
     """
-    printf -- "- process_name: fluviewer\\n"                  >> ${sample_id}_fluviewer_provenance.yml
-    printf -- "  tools:\\n"                                   >> ${sample_id}_fluviewer_provenance.yml
-    printf -- "    - tool_name: fluviewer\\n"                 >> ${sample_id}_fluviewer_provenance.yml
+    printf -- "- process_name: fluviewer\\n"                   >> ${sample_id}_fluviewer_provenance.yml
+    printf -- "  tools:\\n"                                    >> ${sample_id}_fluviewer_provenance.yml
+    printf -- "    - tool_name: fluviewer\\n"                  >> ${sample_id}_fluviewer_provenance.yml
     printf -- "      tool_version: \$(fluviewer --version)\\n" >> ${sample_id}_fluviewer_provenance.yml
-    printf -- "  databases:\\n"                               >> ${sample_id}_fluviewer_provenance.yml
-    printf -- "    - database_name: ${db}\\n"                 >> ${sample_id}_fluviewer_provenance.yml
-    printf -- "      database_path: \$(readlink -f ${db})\\n" >> ${sample_id}_fluviewer_provenance.yml
+    printf -- "  databases:\\n"                                >> ${sample_id}_fluviewer_provenance.yml
+    printf -- "    - database_name: ${db}\\n"                  >> ${sample_id}_fluviewer_provenance.yml
+    printf -- "      database_path: \$(readlink -f ${db})\\n"  >> ${sample_id}_fluviewer_provenance.yml
     printf -- "      database_sha256: \$(shasum -a 256 ${db}|awk '{print \$1}')\\n" >> ${sample_id}_fluviewer_provenance.yml
   
     EXITCODE=0
@@ -59,7 +59,8 @@ process fluviewer {
 	--min-depth ${params.min_depth}  \
 	--min-mapping-quality ${params.min_q} \
 	--min-identity ${params.min_ident} \
-	--max-memory 40 && EXITCODE=\$?) \
+	--max-memory 40 \
+	--force && EXITCODE=\$?) \
 	|| EXITCODE=\$?
 
     function SAFE_EXIT {
