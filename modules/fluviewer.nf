@@ -49,7 +49,6 @@ process fluviewer {
   
     EXITCODE=0
     (fluviewer \
-	${garbage_collection} \
 	--threads ${task.cpus} \
 	--forward-reads ${reads_1} \
 	--reverse-reads ${reads_2} \
@@ -60,6 +59,7 @@ process fluviewer {
 	--min-mapping-quality ${params.min_q} \
 	--min-identity ${params.min_ident} \
 	--max-memory 40 \
+	--disable-garbage-collection \
 	--force && EXITCODE=\$?) \
 	|| EXITCODE=\$?
 
@@ -107,7 +107,7 @@ process fluviewer {
         echo "Finished running FindCleave.py."
     fi
 
-    ln -s analysis_by_stage/02_blast_contigs/${sample_id}_contigs_blast.tsv ${sample_id}_contigs_blast.tsv 
+    cp analysis_by_stage/02_blast_contigs/${sample_id}_contigs_blast.tsv .
 
     SAFE_EXIT \$EXITCODE \$OUTPATH
     """
