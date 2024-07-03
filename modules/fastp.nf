@@ -2,7 +2,7 @@ process fastp {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}", pattern: "*fastp.*",  mode:'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "*fastp.*",  mode:'copy'
 
     input:
     tuple val(sample_id), path(reads_1), path(reads_2)

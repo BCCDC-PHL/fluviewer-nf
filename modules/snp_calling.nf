@@ -4,8 +4,8 @@ process snp_calling {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}/snp-calls", pattern: "*mutations.tsv", mode:'copy'
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}/snp-calls/pairwise", pattern: "*fa", mode:'copy'
+    publishDir "${params.outdir}/${sample_id}/snp-calls", pattern: "*mutations.tsv", mode:'copy'
+    publishDir "${params.outdir}/${sample_id}/snp-calls/pairwise", pattern: "*fa", mode:'copy'
 
     input:
     tuple val(sample_id), path(consensus_seqs)

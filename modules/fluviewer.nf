@@ -6,13 +6,13 @@ process fluviewer {
     errorStrategy { (task.exitStatus == 2 && task.attempt <= maxRetries) ? 'retry' : 'ignore' } 
     maxRetries 5
 
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}", pattern: "${sample_id}*", mode:'copy', saveAs: { filename -> filename.split("/").last() }
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}", pattern: "*tsv", mode:'copy', saveAs: { filename -> filename.split("/").last() }
-    //publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}", pattern: "${sample_id}_fluviewer/spades_output", mode:'copy', saveAs: { filename -> "spades_output" }
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}", pattern: ".*", mode:'copy'
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}", pattern: "logs", mode:'copy', saveAs: { filename -> "fluviewer_logs" }
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}", pattern: ".exitcode", mode:'copy'
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}", pattern: ".command.*", mode:'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}*", mode:'copy', saveAs: { filename -> filename.split("/").last() }
+    publishDir "${params.outdir}/${sample_id}", pattern: "*tsv", mode:'copy', saveAs: { filename -> filename.split("/").last() }
+    //publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fluviewer/spades_output", mode:'copy', saveAs: { filename -> "spades_output" }
+    publishDir "${params.outdir}/${sample_id}", pattern: ".*", mode:'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "logs", mode:'copy', saveAs: { filename -> "fluviewer_logs" }
+    publishDir "${params.outdir}/${sample_id}", pattern: ".exitcode", mode:'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: ".command.*", mode:'copy'
   
     input:
     tuple val(sample_id), path(reads_1), path(reads_2), path(db)
@@ -35,7 +35,7 @@ process fluviewer {
 
     script:
     garbage_collection = params.keep_interfiles ? '-g' : ''
-    OUTPATH="${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}"
+    OUTPATH="${params.outdir}/${sample_id}"
 
     """
     printf -- "- process_name: fluviewer\\n"                   >> ${sample_id}_fluviewer_provenance.yml
@@ -73,7 +73,7 @@ process fluviewer {
         exit \$EXITCODE
     }
 
-    OUTPATH=${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}
+    OUTPATH=${params.outdir}/${sample_id}
 
     if [[ \$OUTPATH != /* ]]; then              # catch case where params.outdir is relative path and fix OUTPATH variable
         OUTPATH=${workflow.launchDir}/\$OUTPATH

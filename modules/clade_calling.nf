@@ -6,8 +6,8 @@ process clade_calling {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}/clade-calls", pattern: "${sample_id}_nextclade.*", mode:'copy'
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}/clade-calls", pattern: "${sample_id}*translation.fasta.gz", mode:'copy'
+    publishDir "${params.outdir}/${sample_id}/clade-calls", pattern: "${sample_id}_nextclade.*", mode:'copy'
+    publishDir "${params.outdir}/${sample_id}/clade-calls", pattern: "${sample_id}*translation.fasta.gz", mode:'copy'
 
     input:
     tuple val(sample_id), path(consensus_seqs)

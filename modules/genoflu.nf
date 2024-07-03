@@ -2,7 +2,7 @@ process genoflu {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${params.run_name}/${params.pipeline_short_name}-v${params.pipeline_minor_version}/${sample_id}/", pattern: "*tsv", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}/", pattern: "*tsv", mode: 'copy'
 
 
     input:
