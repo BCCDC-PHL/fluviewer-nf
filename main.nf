@@ -66,6 +66,11 @@ workflow {
 
 
     main:
+
+    if (params.db == 'NO_FILE' || params.fastq_input == 'NO_FILE') {
+      error "ERROR: Missing required inputs. '--fastq_input' and '--db' parameters are mandatory."
+    }
+
     // Provenance channel starts with just the sample IDs
     // These will be joined to various provenance files as they are generated
     ch_provenance = ch_fastq_input.map{ it -> it[0] }
