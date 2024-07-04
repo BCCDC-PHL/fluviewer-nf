@@ -47,11 +47,11 @@ log.info """
 workflow {
 
     ch_workflow_metadata = Channel.value([
-      workflow.sessionId,
-      workflow.runName,
-      workflow.manifest.name,
-      workflow.manifest.version,
-      workflow.start,
+	workflow.sessionId,
+	workflow.runName,
+	workflow.manifest.name,
+	workflow.manifest.version,
+	workflow.start,
     ])
     
     ch_pipeline_provenance = pipeline_provenance(ch_workflow_metadata)
@@ -66,55 +66,50 @@ workflow {
 
 
     main:
+    // Provenance channel starts with just the sample IDs
+    // These will be joined to various provenance files as they are generated
+    ch_provenance = ch_fastq_input.map{ it -> it[0] }
 
-      if (params.db == 'NO_FILE' || params.fastq_input == 'NO_FILE') {
-        error "ERROR: Missing required inputs. '--fastq_input' and '--db' parameters are mandatory."
-      }
+    // Generate hashes for input files
+    hash_files(ch_fastq_input.map{ it -> [it[0], [it[1], it[2]]] }.combine(Channel.of("fastq_input")))
 
-      // Provenance channel starts with just the sample IDs
-      // These will be joined to various provenance files as they are generated
-      ch_provenance = ch_fastq_input.map{ it -> it[0] }
+    // Clean up reads - remove adapters (fastp) and primers (cutadapt)
+    fastp(ch_fastq_input)
+    cutadapt(fastp.out.trimmed_reads.combine(ch_primers))
+    fastqc(cutadapt.out.primer_trimmed_reads)
 
-      // Generate hashes for input files
-      hash_files(ch_fastq_input.map{ it -> [it[0], [it[1], it[2]]] }.combine(Channel.of("fastq_input")))
+    // Run FluViewer 
+    fluviewer(cutadapt.out.primer_trimmed_reads.combine(ch_db))
 
-      // Clean up reads - remove adapters (fastp) and primers (cutadapt)
-      fastp(ch_fastq_input)
-      cutadapt(fastp.out.trimmed_reads.combine(ch_primers))
-      fastqc(cutadapt.out.primer_trimmed_reads)
+    //Collect al the relevant filesfor multiqc
+    ch_fastqc_collected = fastqc.out.zip.map{ it -> [it[1], it[2]]}.collect()
+    multiqc(fastp.out.json.mix( cutadapt.out.log, ch_fastqc_collected ).collect().ifEmpty([]) )
+ 
+    //Call clades for H1 and H3 samples
+    clade_calling(fluviewer.out.consensus_seqs)
+     
+    snp_calling(fluviewer.out.consensus_main, ch_reference_db)
+   
+    pull_genoflu(params.genoflu_github_url)
 
-      // Run FluViewer 
-      fluviewer(cutadapt.out.primer_trimmed_reads.combine(ch_db))
+    checkout_genoflu(pull_genoflu.out.repo, params.genoflu_version)
 
-      //Collect al the relevant filesfor multiqc
-      ch_fastqc_collected = fastqc.out.zip.map{ it -> [it[1], it[2]]}.collect()
-      multiqc(fastp.out.json.mix( cutadapt.out.log, ch_fastqc_collected ).collect().ifEmpty([]) )
-  
-      //Call clades for H1 and H3 samples
-      clade_calling(fluviewer.out.consensus_seqs)
-      
-      snp_calling(fluviewer.out.consensus_main, ch_reference_db)
-    
-      pull_genoflu(params.genoflu_github_url)
-
-      checkout_genoflu(pull_genoflu.out.repo, params.genoflu_version)
-
-      genoflu(fluviewer.out.consensus_main.combine(pull_genoflu.out.repo))
+    genoflu(fluviewer.out.consensus_main.combine(pull_genoflu.out.repo))
 
 
-      //
-      // Provenance collection processes
-      // The basic idea is to build up a channel with the following structure:
-      // [sample_id, [provenance_file_1.yml, provenance_file_2.yml, provenance_file_3.yml...]]
-      // ...and then concatenate them all together in the 'collect_provenance' process.
-      ch_provenance = ch_provenance.combine(ch_pipeline_provenance).map{ it ->    [it[0], [it[1]]] }
-      ch_provenance = ch_provenance.join(hash_files.out.provenance).map{ it ->    [it[0], it[1] << it[2]] }
-      ch_provenance = ch_provenance.join(fastp.out.provenance).map{ it ->         [it[0], it[1] << it[2]] }
-      ch_provenance = ch_provenance.join(cutadapt.out.provenance).map{ it ->      [it[0], it[1] << it[2]] }
-      ch_provenance = ch_provenance.join(fluviewer.out.provenance).map{ it ->     [it[0], it[1] << it[2]] }    
-      ch_provenance = ch_provenance.join(clade_calling.out.provenance).map{ it -> [it[0], it[1] << it[2]] }
-      ch_provenance = ch_provenance.join(snp_calling.out.provenance).map{ it ->   [it[0], it[1] << it[2]] }
-      ch_provenance = ch_provenance.join(genoflu.out.provenance).map{ it ->       [it[0], it[1] << it[2]] }
-      collect_provenance(ch_provenance)
+    //
+    // Provenance collection processes
+    // The basic idea is to build up a channel with the following structure:
+    // [sample_id, [provenance_file_1.yml, provenance_file_2.yml, provenance_file_3.yml...]]
+    // ...and then concatenate them all together in the 'collect_provenance' process.
+    ch_provenance = ch_provenance.combine(ch_pipeline_provenance).map{ it ->    [it[0], [it[1]]] }
+    ch_provenance = ch_provenance.join(hash_files.out.provenance).map{ it ->    [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(fastp.out.provenance).map{ it ->         [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(cutadapt.out.provenance).map{ it ->      [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(fluviewer.out.provenance).map{ it ->     [it[0], it[1] << it[2]] }    
+    ch_provenance = ch_provenance.join(clade_calling.out.provenance).map{ it -> [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(snp_calling.out.provenance).map{ it ->   [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(genoflu.out.provenance).map{ it ->       [it[0], it[1] << it[2]] }
+    collect_provenance(ch_provenance)
 
 }
