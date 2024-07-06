@@ -10,6 +10,6 @@ process multiqc {
 
     script:
     """
-    multiqc . -n ${params.run_name}_multiqc_report.html
+    multiqc . -n ${params.run_name}_fluviewer-nf_multiqc_report.html
     """
 }

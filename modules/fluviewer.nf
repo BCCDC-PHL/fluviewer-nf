@@ -30,13 +30,9 @@ process fluviewer {
     tuple val(sample_id), path("${sample_id}_fluviewer_provenance.yml"), emit: provenance
     tuple val(sample_id), path("${sample_id}*_mapping_refs.fa"), emit: ref_seqs_for_mapping, optional: true
     tuple val(sample_id), path("${sample_id}_contigs_blast.tsv"), emit: contig_blast_results, optional: true
-    //tuple val(sample_id), path("${sample_id}_fluviewer/spades_output"), emit: spades_results, optional: true
     tuple val(sample_id), path("${sample_id}*.png"), emit: depth_cov_plot, optional: true
 
     script:
-    garbage_collection = params.keep_interfiles ? '-g' : ''
-    OUTPATH="${params.outdir}/${sample_id}"
-
     """
     printf -- "- process_name: fluviewer\\n"                   >> ${sample_id}_fluviewer_provenance.yml
     printf -- "  tools:\\n"                                    >> ${sample_id}_fluviewer_provenance.yml

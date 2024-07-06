@@ -5,9 +5,7 @@
  *   -----------------------------------------
  */
 
- import java.time.LocalDateTime
-
- nextflow.enable.dsl = 2
+nextflow.enable.dsl = 2
 
 include { hash_files }          from './modules/hash_files.nf'
 include { pipeline_provenance } from './modules/provenance.nf'
@@ -60,15 +58,22 @@ workflow {
 
     ch_db = Channel.fromPath(params.db)
 
-    ch_fastq_input = Channel.fromFilePairs( params.fastq_search_path, flat: true ).map{ it -> [it[0].split('_')[0], it[1], it[2]] }.unique{ it -> it[0] }
+    if (params.samplesheet_input != 'NO_FILE') {
+	ch_fastq_input = Channel.fromPath(params.samplesheet_input).splitCsv(header: true).map{ it -> [it['ID'], it['R1'], it['R2']] }
+    } else {
+	ch_fastq_input = Channel.fromFilePairs( params.fastq_search_path, flat: true ).map{ it -> [it[0].split('_')[0], it[1], it[2]] }.unique{ it -> it[0] }
+    }
 
     ch_reference_db = Channel.of([file(params.blastx_subtype_db).parent, file(params.blastx_subtype_db).name]).first()
 
 
     main:
 
-    if (params.db == 'NO_FILE' || params.fastq_input == 'NO_FILE') {
-      error "ERROR: Missing required inputs. '--fastq_input' and '--db' parameters are mandatory."
+    if (params.fastq_input == 'NO_FILE' && params.samplesheet_input == 'NO_FILE') {
+	error "ERROR: Missing required inputs. One of '--fastq_input' or '--samplesheet_input' must be provided."
+    }
+    if (params.db == 'NO_FILE') {
+	error "ERROR: Missing required inputs. '--db' parameter is mandatory."
     }
 
     // Provenance channel starts with just the sample IDs
