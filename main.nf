@@ -12,6 +12,7 @@ include { pipeline_provenance } from './modules/provenance.nf'
 include { collect_provenance }  from './modules/provenance.nf'
 include { fastp }               from './modules/fastp.nf'
 include { cutadapt}             from './modules/cutadapt.nf'
+include { normalize_depth }     from './modules/fluviewer.nf'
 include { fluviewer }           from './modules/fluviewer.nf'
 include { multiqc }             from './modules/multiqc.nf'
 include { fastqc }              from './modules/fastqc.nf'
@@ -88,8 +89,10 @@ workflow {
     cutadapt(fastp.out.trimmed_reads.combine(ch_primers))
     fastqc(cutadapt.out.primer_trimmed_reads)
 
+    normalize_depth(cutadapt.out.primer_trimmed_reads)
+
     // Run FluViewer 
-    fluviewer(cutadapt.out.primer_trimmed_reads.combine(ch_db))
+    fluviewer(normalize_depth.out.normalized_reads.combine(ch_db))
 
     //Collect al the relevant filesfor multiqc
     ch_fastqc_collected = fastqc.out.zip.map{ it -> [it[1], it[2]]}.collect()
@@ -112,14 +115,15 @@ workflow {
     // The basic idea is to build up a channel with the following structure:
     // [sample_id, [provenance_file_1.yml, provenance_file_2.yml, provenance_file_3.yml...]]
     // ...and then concatenate them all together in the 'collect_provenance' process.
-    ch_provenance = ch_provenance.combine(ch_pipeline_provenance).map{ it ->    [it[0], [it[1]]] }
-    ch_provenance = ch_provenance.join(hash_files.out.provenance).map{ it ->    [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(fastp.out.provenance).map{ it ->         [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(cutadapt.out.provenance).map{ it ->      [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(fluviewer.out.provenance).map{ it ->     [it[0], it[1] << it[2]] }    
-    ch_provenance = ch_provenance.join(clade_calling.out.provenance).map{ it -> [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(snp_calling.out.provenance).map{ it ->   [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(genoflu.out.provenance).map{ it ->       [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.combine(ch_pipeline_provenance).map{ it ->      [it[0], [it[1]]] }
+    ch_provenance = ch_provenance.join(hash_files.out.provenance).map{ it ->      [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(fastp.out.provenance).map{ it ->           [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(cutadapt.out.provenance).map{ it ->        [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(normalize_depth.out.provenance).map{ it -> [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(fluviewer.out.provenance).map{ it ->       [it[0], it[1] << it[2]] }    
+    ch_provenance = ch_provenance.join(clade_calling.out.provenance).map{ it ->   [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(snp_calling.out.provenance).map{ it ->     [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(genoflu.out.provenance).map{ it ->         [it[0], it[1] << it[2]] }
     collect_provenance(ch_provenance)
 
 }
