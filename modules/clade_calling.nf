@@ -1,3 +1,21 @@
+process determine_hemagglutinin_type {
+    tag { sample_id }
+
+    input:
+    tuple val(sample_id), path(consensus_seq)
+
+    output:
+    tuple val(sample_id), val(hemagglutinin_type), path("${sample_id}_HA_consensus.fa"), emit: consensus, optional: true
+
+    script:
+    hemagglutinin_type = "NONE"
+    """
+    mv ${consensus_seq} ${sample_id}_HA_consensus_tmp.fa
+    
+    cat ${sample_id}_HA_consensus_tmp.fa > ${sample_id}_HA_consensus.fa
+    """
+}
+
 process clade_calling {
 
     conda "${projectDir}/environments/nextclade.yml"
@@ -10,7 +28,7 @@ process clade_calling {
     publishDir "${params.outdir}/${sample_id}/clade-calls", pattern: "${sample_id}*translation.fasta.gz", mode:'copy'
 
     input:
-    tuple val(sample_id), path(consensus_seqs)
+    tuple val(sample_id), path(ha_consensus_seq)
 
     output:
     tuple val(sample_id), path("*nextclade*"), emit: nextclade, optional: true
@@ -28,11 +46,11 @@ process clade_calling {
 
     FOUND=true
 
-    if [ `grep "H1" ${sample_id}_HA_consensus.fa` ]; then
+    if [ `grep "H1" ${ha_consensus_seq}` ]; then
         dataset=${params.h1_dataset}
-    elif [ `grep "H3" ${sample_id}_HA_consensus.fa` ]; then 
+    elif [ `grep "H3" ${ha_consensus_seq}` ]; then 
         dataset=${params.h3_dataset}
-    elif [ `grep "H5" ${sample_id}_HA_consensus.fa` ]; then 
+    elif [ `grep "H5" ${ha_consensus_seq}` ]; then 
         dataset=${params.h5_dataset}
     else 
         echo "WARNING: None of H1, H3, or H5 were detected in the HA consensus file. No dataset available. Exiting."
@@ -42,7 +60,7 @@ process clade_calling {
 
     if [ \$FOUND == true ]; then 
 
-        nextclade run --input-dataset \$dataset \
+        nextclade run --input-dataset \$(echo dataset) \
         --output-fasta=${sample_id}_nextclade.aligned.fasta.gz \
         --output-json=${sample_id}_nextclade.json \
         --output-ndjson=${sample_id}_nextclade.ndjson \

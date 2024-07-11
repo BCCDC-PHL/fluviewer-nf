@@ -22,6 +22,7 @@ process fluviewer {
     tuple val(sample_id), path("${sample_id}*.bam.bai"), emit: alignmentindex, optional: true
     tuple val(sample_id), path("${sample_id}*report.tsv"), emit: reports, optional: true
     tuple val(sample_id), path("${sample_id}*_consensus.fa"), emit: consensus_seqs, optional: true
+    tuple val(sample_id), path("${sample_id}_HA_consensus.fa"), emit: ha_consensus_seq, optional: true
     tuple val(sample_id), path("${sample_id}*consensus_seqs.fa"), emit: consensus_main
     tuple val(sample_id), path("${sample_id}*_HPAI.tsv"), emit: HPAI, optional: true
     tuple val(sample_id), path("${sample_id}*_cov.png"), emit: coverage_plot, optional: true
