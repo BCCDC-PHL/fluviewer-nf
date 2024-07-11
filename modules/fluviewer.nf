@@ -10,11 +10,9 @@ process fluviewer {
     publishDir "${params.outdir}/${sample_id}", pattern: "*tsv", mode:'copy', saveAs: { filename -> filename.split("/").last() }
     //publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fluviewer/spades_output", mode:'copy', saveAs: { filename -> "spades_output" }
     publishDir "${params.outdir}/${sample_id}", pattern: ".*", mode:'copy'
-    publishDir "${params.outdir}/${sample_id}", pattern: "logs", mode:'copy', saveAs: { filename -> "fluviewer_logs" }
-    publishDir "${params.outdir}/${sample_id}", pattern: "fluviewer_*.txt", mode:'copy'
-    publishDir "${params.outdir}/${sample_id}", pattern: ".command.*", mode:'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "logs", mode:'copy', saveAs: { filename -> "fluviewer_logs" }  
 
-  
+
     input:
     tuple val(sample_id), path(reads_1), path(reads_2), path(db)
 
@@ -60,14 +58,21 @@ process fluviewer {
 	--force && EXITCODE=\$?) \
 	|| EXITCODE=\$?
 
+    function SAVE_LOGS {
+        EXITCODE=\$1
+        
+        mkdir -p logs
+        echo \$EXITCODE > logs/fluviewer_exitcode.txt
+        cp .command.out logs/fluviewer_stdout.txt
+        cp .command.err logs/fluviewer_stderr.txt
+    }
+
     function SAFE_EXIT {
         EXITCODE=\$1
         OUTPATH=\$2
 
-        echo \$EXITCODE > fluviewer_exitcode.txt
-        cp fluviewer_exitcode.txt \$OUTPATH
-        cp .command.out \${OUTPATH}/fluviewer_stdout.txt
-        cp .command.err \${OUTPATH}/fluviewer_stderr.txt
+        mkdir -p \${OUTPATH}/fluviewer_logs
+        cp logs/fluviewer*.txt \${OUTPATH}/fluviewer_logs
         exit \$EXITCODE
     }
 
@@ -77,6 +82,7 @@ process fluviewer {
         OUTPATH=${workflow.launchDir}/\$OUTPATH
     fi
 
+    SAVE_LOGS \$EXITCODE
 
     if [ \$EXITCODE -ne 0 ]; then 
         echo "fluviewer exited with non-zero exit code. Skipping remaining analyses."
@@ -101,12 +107,11 @@ process fluviewer {
     if [[ ! -f ${sample_id}_HA_consensus.fa ]]; then
         echo "HA segment consensus not generated. Skipping FindCleave.py..."
     else
-	python ${projectDir}/bin/FindCleave.py -i ${sample_id}_HA_consensus.fa -o ${sample_id}_HPAI.tsv
+	    python ${projectDir}/bin/FindCleave.py -i ${sample_id}_HA_consensus.fa -o ${sample_id}_HPAI.tsv
         echo "Finished running FindCleave.py."
     fi
 
     cp analysis_by_stage/02_blast_contigs/${sample_id}_contigs_blast.tsv .
 
-    SAFE_EXIT \$EXITCODE \$OUTPATH
     """
 }
