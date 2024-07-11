@@ -15,7 +15,7 @@ if [ -z "${GITHUB_ACTIONS}" ]; then
 else
     echo "In GitHub Actions environment. Modifying nextflow.config and FluViewer.nf."
     sed -i 's/cpus = 8/cpus = 4/g' nextflow.config
-    sed -i '/memory/d' modules/fluviewer.nf
+    sed -i '/memory/d' nextflow.config
 fi
 
 nextflow -log artifacts/nextflow.log \
