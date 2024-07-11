@@ -111,7 +111,7 @@ process fluviewer {
         echo "Finished running FindCleave.py."
     fi
 
-    cp analysis_by_stage/02_blast_contigs/${sample_id}_contigs_blast.tsv .
+    cp analysis_by_stage/*_blast_contigs/${sample_id}_contigs_blast.tsv .
 
     """
 }
