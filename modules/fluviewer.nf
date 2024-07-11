@@ -11,8 +11,9 @@ process fluviewer {
     //publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fluviewer/spades_output", mode:'copy', saveAs: { filename -> "spades_output" }
     publishDir "${params.outdir}/${sample_id}", pattern: ".*", mode:'copy'
     publishDir "${params.outdir}/${sample_id}", pattern: "logs", mode:'copy', saveAs: { filename -> "fluviewer_logs" }
-    publishDir "${params.outdir}/${sample_id}", pattern: ".exitcode", mode:'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "fluviewer_*.txt", mode:'copy'
     publishDir "${params.outdir}/${sample_id}", pattern: ".command.*", mode:'copy'
+
   
     input:
     tuple val(sample_id), path(reads_1), path(reads_2), path(db)
@@ -63,9 +64,10 @@ process fluviewer {
         EXITCODE=\$1
         OUTPATH=\$2
 
-        echo \$EXITCODE > .exitcode
-        cp .command.* \$OUTPATH
-        cp .exitcode \$OUTPATH
+        echo \$EXITCODE > fluviewer_exitcode.txt
+        cp fluviewer_exitcode.txt \$OUTPATH
+        cp .command.out \${OUTPATH}/fluviewer_stdout.txt
+        cp .command.err \${OUTPATH}/fluviewer_stderr.txt
         exit \$EXITCODE
     }
 
