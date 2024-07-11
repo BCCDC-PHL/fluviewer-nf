@@ -54,8 +54,8 @@ Short read Illumina sequences, files ending in '.fastq.gz', '.fq.gz', '.fastq', 
 For a full list of optional arguments, see: https://github.com/BCCDC-PHL/FluViewer
 
 | Argument              | Description                                                                                      | Default Value   |
-|-----------------------|--------------------------------------------------------------------------------------------------|----------------:|
-| `--target_depth       | Depth to normalize coverage to, where sufficient depth is available in inputs.                   |             200 |
+|----------------------------|--------------------------------------------------------------------------------------------------|----------------:|
+| `--target_depth`       | Depth to normalize coverage to, where sufficient depth is available in inputs.                   |             200 |
 | `--min_depth`         | Minimum read depth for base calling.                                                             |              20 |
 | `--min_q`             | Minimum PHRED score for base quality and mapping quality.                                        |              20 |
 | `--min_cov`           | Minimum coverage of database reference sequence by contig, percentage.                           |              25 |
