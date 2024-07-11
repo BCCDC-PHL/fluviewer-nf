@@ -6,11 +6,18 @@ process normalize_depth {
 
     output:
     tuple val(sample_id), path("${sample_id}-normalized_R1.fastq.gz"), path("${sample_id}-normalized_R2.fastq.gz"), emit: normalized_reads
+    tuple val(sample_id), path("${sample_id}_normalize_depth_provenance.yml"), emit: provenance
 
     script:
+    max_memory_gb = task.memory.toString().split(" ")[0]
     """
+    printf -- "- process_name: normalize_depth\\n"                >> ${sample_id}_normalize_depth_provenance.yml
+    printf -- "  tools:\\n"                                       >> ${sample_id}_normalize_depth_provenance.yml
+    printf -- "    - tool_name: bbnorm\\n"                        >> ${sample_id}_normalize_depth_provenance.yml
+    printf -- "      tool_version: \$(bbnorm.sh --version)\\n"    >> ${sample_id}_normalize_depth_provenance.yml
+    
     bbnorm.sh \
-	-Xmx${task.memory}g \
+	-Xmx${max_memory_gb}g \
 	in1=${reads_1} \
 	in2=${reads_2} \
 	out1=${sample_id}-normalized_R1.fastq \
@@ -28,10 +35,10 @@ process fluviewer {
 
     tag { sample_id }
 
+    errorStrategy 'ignore'
+
     publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}*", mode:'copy', saveAs: { filename -> filename.split("/").last() }
     publishDir "${params.outdir}/${sample_id}", pattern: "*tsv", mode:'copy', saveAs: { filename -> filename.split("/").last() }
-    //publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fluviewer/spades_output", mode:'copy', saveAs: { filename -> "spades_output" }
-    publishDir "${params.outdir}/${sample_id}", pattern: ".*", mode:'copy'
     publishDir "${params.outdir}/${sample_id}", pattern: "logs", mode:'copy', saveAs: { filename -> "fluviewer_logs" }
     publishDir "${params.outdir}/${sample_id}", pattern: ".exitcode", mode:'copy'
     publishDir "${params.outdir}/${sample_id}", pattern: ".command.*", mode:'copy'
