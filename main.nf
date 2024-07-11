@@ -12,6 +12,7 @@ include { pipeline_provenance } from './modules/provenance.nf'
 include { collect_provenance }  from './modules/provenance.nf'
 include { fastp }               from './modules/fastp.nf'
 include { cutadapt}             from './modules/cutadapt.nf'
+include { normalize_depth }     from './modules/fluviewer.nf'
 include { fluviewer }           from './modules/fluviewer.nf'
 include { multiqc }             from './modules/multiqc.nf'
 include { fastqc }              from './modules/fastqc.nf'
@@ -88,8 +89,10 @@ workflow {
     cutadapt(fastp.out.trimmed_reads.combine(ch_primers))
     fastqc(cutadapt.out.primer_trimmed_reads)
 
+    normalize_depth(cutadapt.out.primer_trimmed_reads)
+
     // Run FluViewer 
-    fluviewer(cutadapt.out.primer_trimmed_reads.combine(ch_db))
+    fluviewer(normalize_depth.out.normalized_reads.combine(ch_db))
 
     //Collect al the relevant filesfor multiqc
     ch_fastqc_collected = fastqc.out.zip.map{ it -> [it[1], it[2]]}.collect()

@@ -1,10 +1,32 @@
+process normalize_depth {
+    tag { sample_id }
+
+    input:
+    tuple val(sample_id), path(reads_1), path(reads_2)
+
+    output:
+    tuple val(sample_id), path("${sample_id}-normalized_R1.fastq.gz"), path("${sample_id}-normalized_R2.fastq.gz"), emit: normalized_reads
+
+    script:
+    """
+    bbnorm.sh \
+	-Xmx${task.memory}g \
+	in1=${reads_1} \
+	in2=${reads_2} \
+	out1=${sample_id}-normalized_R1.fastq \
+	out2=${sample_id}-normalized_R2.fastq \
+	target=${params.target_depth} \
+	
+
+    gzip ${sample_id}-normalized_R1.fastq
+    gzip ${sample_id}-normalized_R2.fastq
+    """
+    
+}
+
 process fluviewer {
 
     tag { sample_id }
-
-    memory  { 50.GB * task.attempt }
-    errorStrategy { (task.exitStatus == 2 && task.attempt <= maxRetries) ? 'retry' : 'ignore' } 
-    maxRetries 5
 
     publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}*", mode:'copy', saveAs: { filename -> filename.split("/").last() }
     publishDir "${params.outdir}/${sample_id}", pattern: "*tsv", mode:'copy', saveAs: { filename -> filename.split("/").last() }
@@ -56,6 +78,7 @@ process fluviewer {
 	--min-identity ${params.min_ident} \
 	--max-memory 40 \
 	--disable-garbage-collection \
+	--skip-depth-normalization \
 	--force && EXITCODE=\$?) \
 	|| EXITCODE=\$?
 
