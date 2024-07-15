@@ -27,16 +27,14 @@ process clade_calling {
     if [ `grep "H1" ${ha_consensus_seq}` ]; then
         if [ ${params.h1_dataset} == "NO_FILE" ]; then
             dataset="flu_h1n1pdm_ha"
-            reference="CY121680"
-            nextclade dataset get --name \$dataset --reference \$reference --output-dir \$dataset
+            nextclade dataset get --name \$dataset --output-dir \$dataset
         else
 	    dataset=${params.h1_dataset}
 	fi
     elif [ `grep "H3" ${ha_consensus_seq}` ]; then 
         if [ ${params.h3_dataset} == "NO_FILE" ]; then
             dataset="flu_h3n2_ha"
-            reference="CY163680"
-            nextclade dataset get --name \$dataset --reference \$reference --output-dir \$dataset
+            nextclade dataset get --name \$dataset --output-dir \$dataset
         else
 	    dataset=${params.h3_dataset}
     	fi
@@ -60,7 +58,7 @@ process clade_calling {
         --output-csv=${sample_id}_nextclade.csv \
         --output-tsv=${sample_id}_nextclade.tsv \
         --output-tree=${sample_id}_nextclade_auspice.json \
-        --output-translations=${sample_id}_nextclade_{gene}.translation.fasta.gz \
+        --output-translations=${sample_id}_nextclade_{cds}.translation.fasta.gz \
         ${ha_consensus_seq}
     """
 }
