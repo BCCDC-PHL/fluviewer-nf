@@ -107,7 +107,7 @@ process fluviewer {
     if [[ ! -f ${sample_id}_HA_consensus.fa ]]; then
         echo "HA segment consensus not generated. Skipping FindCleave.py..."
     else
-	    python ${projectDir}/bin/FindCleave.py -i ${sample_id}_HA_consensus.fa -o ${sample_id}_HPAI.tsv
+        FindCleave.py -i ${sample_id}_HA_consensus.fa -o ${sample_id}_HPAI.tsv
         echo "Finished running FindCleave.py."
     fi
 
