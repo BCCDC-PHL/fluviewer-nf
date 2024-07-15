@@ -43,22 +43,34 @@ process clade_calling {
     printf -- "    subcommand: run\\n"       >> ${sample_id}_clade_calling_provenance.yml
 
     if [ `grep "H1" ${ha_consensus_seq}` ]; then
-        dataset="flu_h1n1pdm_ha"
-        echo \$dataset
+        if [ ${params.h1_dataset} == "NO_FILE" ]; then
+            dataset="flu_h1n1pdm_ha"
+            reference="CY121680"
+            nextclade dataset get --name \$dataset --reference \$reference --output-dir \$dataset
+        else
+	    dataset=${params.h1_dataset}
+	fi
     elif [ `grep "H3" ${ha_consensus_seq}` ]; then 
-        dataset="flu_h3n2_ha"
-        echo \$dataset
-    elif [ `grep "H5" ${ha_consensus_seq}` ]; then 
+        if [ ${params.h3_dataset} == "NO_FILE" ]; then
+            dataset="flu_h3n2_ha"
+            reference="CY163680"
+            nextclade dataset get --name \$dataset --reference \$reference --output-dir \$dataset
+        else
+	    dataset=${params.h3_dataset}
+    	fi
+    elif [ `grep "H5" ${ha_consensus_seq}` ]; then
+        if [ ${params.h5_dataset} == "NO_FILE" ]; then
+            echo "WARNING: H5 subtype detected in the HA consensus file, but no H5 dataset provided. Please provide an H5 nextclade dataset with the --h5_dataset flag."
+            exit 10
+        else
         dataset=${params.h5_dataset}
-        echo \$dataset
     else 
         echo "WARNING: None of H1, H3, or H5 were detected in the HA consensus file. No dataset available. Exiting."
         exit 10
     fi
 
-    nextclade dataset get --name \$dataset --output-dir \$dataset
-
-    nextclade run --input-dataset \$dataset \
+    nextclade run \
+	--input-dataset \$dataset \
         --output-fasta=${sample_id}_nextclade.aligned.fasta.gz \
         --output-json=${sample_id}_nextclade.json \
         --output-ndjson=${sample_id}_nextclade.ndjson \
