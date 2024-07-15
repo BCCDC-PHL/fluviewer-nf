@@ -63,7 +63,8 @@ process clade_calling {
             echo "WARNING: H5 subtype detected in the HA consensus file, but no H5 dataset provided. Please provide an H5 nextclade dataset with the --h5_dataset flag."
             exit 10
         else
-        dataset=${params.h5_dataset}
+            dataset=${params.h5_dataset}
+        fi
     else 
         echo "WARNING: None of H1, H3, or H5 were detected in the HA consensus file. No dataset available. Exiting."
         exit 10
