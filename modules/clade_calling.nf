@@ -10,11 +10,11 @@ process clade_calling {
     publishDir "${params.outdir}/${sample_id}/clade-calls", pattern: "${sample_id}*translation.fasta.gz", mode:'copy'
 
     input:
-    tuple val(sample_id), path(consensus_seqs)
+    tuple val(sample_id), path(ha_consensus_seq)
 
     output:
-    tuple val(sample_id), path("*nextclade*"), emit: nextclade, optional: true
-    tuple val(sample_id), path("${sample_id}_clade_calling_provenance.yml"), emit: provenance, optional: true
+    tuple val(sample_id), path("*nextclade*"), emit: nextclade
+    tuple val(sample_id), path("${sample_id}_clade_calling_provenance.yml"), emit: provenance
 
     script:
     """
@@ -24,25 +24,36 @@ process clade_calling {
     printf -- "    tool_version: \$(nextclade --version 2>&1  | cut -d ' ' -f 2)\\n" >> ${sample_id}_clade_calling_provenance.yml
     printf -- "    subcommand: run\\n"       >> ${sample_id}_clade_calling_provenance.yml
 
-    [ ! -f  ${sample_id}_HA_consensus.fa ] && ln -sf *HA_consensus.fa ${sample_id}_HA_consensus.fa
-
-    FOUND=true
-
-    if [ `grep "H1" ${sample_id}_HA_consensus.fa` ]; then
-        dataset=${params.h1_dataset}
-    elif [ `grep "H3" ${sample_id}_HA_consensus.fa` ]; then 
-        dataset=${params.h3_dataset}
-    elif [ `grep "H5" ${sample_id}_HA_consensus.fa` ]; then 
-        dataset=${params.h5_dataset}
+    if [ `grep "H1" ${ha_consensus_seq}` ]; then
+        if [ ${params.h1_dataset} == "NO_FILE" ]; then
+            dataset="flu_h1n1pdm_ha"
+            reference="CY121680"
+            nextclade dataset get --name \$dataset --reference \$reference --output-dir \$dataset
+        else
+	    dataset=${params.h1_dataset}
+	fi
+    elif [ `grep "H3" ${ha_consensus_seq}` ]; then 
+        if [ ${params.h3_dataset} == "NO_FILE" ]; then
+            dataset="flu_h3n2_ha"
+            reference="CY163680"
+            nextclade dataset get --name \$dataset --reference \$reference --output-dir \$dataset
+        else
+	    dataset=${params.h3_dataset}
+    	fi
+    elif [ `grep "H5" ${ha_consensus_seq}` ]; then
+        if [ ${params.h5_dataset} == "NO_FILE" ]; then
+            echo "WARNING: H5 subtype detected in the HA consensus file, but no H5 dataset provided. Please provide an H5 nextclade dataset with the --h5_dataset flag."
+            exit 10
+        else
+            dataset=${params.h5_dataset}
+        fi
     else 
         echo "WARNING: None of H1, H3, or H5 were detected in the HA consensus file. No dataset available. Exiting."
-        FOUND=false
-        dataset="NONE"
-    fi 
+        exit 10
+    fi
 
-    if [ \$FOUND == true ]; then 
-
-        nextclade run --input-dataset \$dataset \
+    nextclade run \
+	--input-dataset \$dataset \
         --output-fasta=${sample_id}_nextclade.aligned.fasta.gz \
         --output-json=${sample_id}_nextclade.json \
         --output-ndjson=${sample_id}_nextclade.ndjson \
@@ -50,14 +61,6 @@ process clade_calling {
         --output-tsv=${sample_id}_nextclade.tsv \
         --output-tree=${sample_id}_nextclade_auspice.json \
         --output-translations=${sample_id}_nextclade_{gene}.translation.fasta.gz \
-        ${sample_id}_HA_consensus.fa
-
-        LOCATION="\${dataset}\\n" 
-        VERSION="\$(grep "tag" \${dataset}/tag.json)\\n" 
-    else
-        LOCATION="NONE_INVALID_HA_TYPE\\n"
-        VERSION="NONE_INVALID_HA_TYPE\\n"
-    fi 
-
+        ${ha_consensus_seq}
     """
 }
