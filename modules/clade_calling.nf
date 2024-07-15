@@ -1,21 +1,3 @@
-process determine_hemagglutinin_type {
-    tag { sample_id }
-
-    input:
-    tuple val(sample_id), path(consensus_seq)
-
-    output:
-    tuple val(sample_id), val(hemagglutinin_type), path("${sample_id}_HA_consensus.fa"), emit: consensus, optional: true
-
-    script:
-    hemagglutinin_type = "NONE"
-    """
-    mv ${consensus_seq} ${sample_id}_HA_consensus_tmp.fa
-    
-    cat ${sample_id}_HA_consensus_tmp.fa > ${sample_id}_HA_consensus.fa
-    """
-}
-
 process clade_calling {
 
     conda "${projectDir}/environments/nextclade.yml"
