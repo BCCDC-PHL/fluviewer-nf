@@ -14,7 +14,7 @@ process normalize_depth {
     printf -- "- process_name: normalize_depth\\n"                >> ${sample_id}_normalize_depth_provenance.yml
     printf -- "  tools:\\n"                                       >> ${sample_id}_normalize_depth_provenance.yml
     printf -- "    - tool_name: bbnorm\\n"                        >> ${sample_id}_normalize_depth_provenance.yml
-    printf -- "      tool_version: \$(bbnorm.sh --version)\\n"    >> ${sample_id}_normalize_depth_provenance.yml
+    printf -- "      tool_version: \$(bbnorm.sh --version 2>&1 | head -n 2 | tail -n 1 | cut -d ' ' -f 3)\\n" >> ${sample_id}_normalize_depth_provenance.yml
     
     bbnorm.sh \
 	-Xmx${max_memory_gb}g \
