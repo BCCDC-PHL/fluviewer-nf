@@ -207,7 +207,7 @@ For each pipeline invocation, each sample will produce a `provenance.yml` file w
 - process_name: normalize_depth
   tools:
     - tool_name: bbnorm
-      tool_version: 
+      tool_version: 39.01
 - process_name: fluviewer
   tools:
     - tool_name: fluviewer
