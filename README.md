@@ -29,11 +29,14 @@ flowchart TD
   normalize_reads -- normalized_reads --> fluviewer(fluviewer)
   fluviewer_db[FluViewer DB] --> fluviewer
   fluviewer  -- ha_consensus --> clade_calling(clade_calling)
+  clade_calling --> clade_calls[clade-calls]
   fluviewer -- consensus_main --> snp_caling(snp_calling)
+  snp_calling --> snp_calls[snp-calls]
   fluviewer -- consensus_main --> genoflu(genoflu)
   fluviewer -->  segment_coverage_plots[Segment Coverage Plots]
   fluviewer --> consensus_sequence[Consensus Sequence]
   fluviewer --> variants[Variants VCF]
+  genoflu --> genoflu_tsv[GenoFLU tsv]
 ```
 
 
