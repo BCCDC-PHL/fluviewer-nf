@@ -21,7 +21,7 @@ process snp_calling {
     printf -- "- process_name: snp_caling\\n" >> ${sample_id}_snp_calling_provenance.yml
     printf -- "  tools:\\n"                   >> ${sample_id}_snp_calling_provenance.yml
     printf -- "    - tool_name: blastx\\n"    >> ${sample_id}_snp_calling_provenance.yml
-    printf -- "      tool_version: \$(blastx -version | head -n 1)\\n" >> ${sample_id}_snp_calling_provenance.yml
+    printf -- "      tool_version: \$(blastx -version | head -n 1 | cut -d ' ' -f 2)\\n" >> ${sample_id}_snp_calling_provenance.yml
     printf -- "  databases:\\n"               >> ${sample_id}_snp_calling_provenance.yml
     printf -- "    - database_name: ${blastx_db_name}\\n" >> ${sample_id}_snp_calling_provenance.yml
 
