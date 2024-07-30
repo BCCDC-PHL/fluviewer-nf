@@ -20,9 +20,9 @@ process clade_calling {
     """
     printf -- "- process_name: nextclade\\n"  >> ${sample_id}_clade_calling_provenance.yml
     printf -- "  tools:\\n"                   >> ${sample_id}_clade_calling_provenance.yml
-    printf -- "  - tool_name: nextclade\\n" >> ${sample_id}_clade_calling_provenance.yml
-    printf -- "    tool_version: \$(nextclade --version 2>&1  | cut -d ' ' -f 2)\\n" >> ${sample_id}_clade_calling_provenance.yml
-    printf -- "    subcommand: run\\n"       >> ${sample_id}_clade_calling_provenance.yml
+    printf -- "    - tool_name: nextclade\\n" >> ${sample_id}_clade_calling_provenance.yml
+    printf -- "      tool_version: \$(nextclade --version 2>&1  | cut -d ' ' -f 2)\\n" >> ${sample_id}_clade_calling_provenance.yml
+    printf -- "      subcommand: run\\n"       >> ${sample_id}_clade_calling_provenance.yml
 
 
     if [ `grep "H1" ${ha_consensus_seq}` ]; then
@@ -52,9 +52,9 @@ process clade_calling {
     fi
 
     printf -- "  databases:\\n"                >> ${sample_id}_clade_calling_provenance.yml
-    printf -- "  - database_name: \$(grep 'dbname' \${dataset}/metadata.json | cut -d'\"' -f4) \\n"                  >> ${sample_id}_clade_calling_provenance.yml
-    printf -- "  - database_path: \${dataset} \\n"                                                      >> ${sample_id}_clade_calling_provenance.yml
-    printf -- "  - database_sha256: \$(sha256sum \${dataset}/tree.json | cut -d' ' -f1) \\n"                >> ${sample_id}_clade_calling_provenance.yml
+    printf -- "    - database_name: \$(grep 'dbname' \${dataset}/metadata.json | cut -d'\"' -f4) \\n"                  >> ${sample_id}_clade_calling_provenance.yml
+    printf -- "    - database_path: \${dataset} \\n"                                                      >> ${sample_id}_clade_calling_provenance.yml
+    printf -- "    - database_sha256: \$(sha256sum \${dataset}/tree.json | cut -d' ' -f1) \\n"                >> ${sample_id}_clade_calling_provenance.yml
 
 
     nextclade run \
