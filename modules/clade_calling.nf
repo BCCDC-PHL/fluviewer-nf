@@ -37,8 +37,8 @@ process clade_calling {
             echo "WARNING: H3 subtype detected in the HA consensus file, but no H3 dataset provided. Please provide an H3 nextclade dataset with the --h3_dataset flag."
             exit 10
         else
-	        dataset=${params.h3_dataset}
-    	fi
+            dataset=${params.h3_dataset}
+        fi
     elif [ `grep "H5" ${ha_consensus_seq}` ]; then
         if [ ${params.h5_dataset} == "NO_FILE" ]; then
             echo "WARNING: H5 subtype detected in the HA consensus file, but no H5 dataset provided. Please provide an H5 nextclade dataset with the --h5_dataset flag."
@@ -58,7 +58,7 @@ process clade_calling {
 
 
     nextclade run \
-	    --input-dataset \$dataset \
+        --input-dataset \$dataset \
         --output-fasta=${sample_id}_nextclade.aligned.fasta.gz \
         --output-json=${sample_id}_nextclade.json \
         --output-ndjson=${sample_id}_nextclade.ndjson \
