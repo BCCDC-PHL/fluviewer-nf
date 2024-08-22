@@ -2,7 +2,7 @@ BootStrap: docker
 From: python:3.9-slim
 
 %files
-    environment.yml /opt/environment.yml
+    fluviewer.yml /opt/environment.yml
 
 %post
     # Install system dependencies
@@ -11,9 +11,9 @@ From: python:3.9-slim
         bzip2 \
         procps \
         ca-certificates \
-        git \
-        && apt-get clean \
-        && rm -rf /var/lib/apt/lists/*
+        git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
     # Install Miniforge
     wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh && \
@@ -21,10 +21,8 @@ From: python:3.9-slim
     rm Miniforge3-Linux-x86_64.sh
 
     # Add conda to PATH
-    . /opt/mamba/bin/activate
-
-    # Initialize mamba	
-    mamba init
+    . /opt/mamba/bin/activate && \
+    mamba init && \
     . /root/.bashrc
 
     # Create conda environment
