@@ -55,7 +55,7 @@ workflow {
     
     ch_pipeline_provenance = pipeline_provenance(ch_workflow_metadata)
 
-    ch_primers = Channel.fromPath(params.primer_path)
+    ch_primers = Channel.fromPath(params.primers)
 
     ch_db = Channel.fromPath(params.db)
 
