@@ -97,8 +97,8 @@ def pairwise_alignment(aligner, ref, qry):
 
 def get_mutations(ref, qry):
 	mutations = []
-	insertion = []
-	deletion = []
+	insertion = ''
+	deletion = ''
 
 	ref_pos = 0
 	for ref_char, qry_char in zip(ref, qry):
@@ -108,24 +108,24 @@ def get_mutations(ref, qry):
 
 		if ref_char == '-':     # insertion
 			if deletion: 
-				mutations += [("".join(deletion), ref_pos-1, "-")]
-				deletion = []	
+				mutations += [(deletion, ref_pos-1, "-")]
+				deletion = ""	
 			insertion += qry_char
 		elif qry_char == '-':   # deletion
 			if insertion:
-				mutations += [("-", ref_pos-1, "".join(insertion))]
-				insertion = []
+				mutations += [("-", ref_pos-1, insertion)]
+				insertion = ""
 			deletion += ref_char
 
 		else:					# neither insertion nor deletion
 			if insertion:
-				mutations += [("-", ref_pos-1, "".join(insertion))]
-				insertion = []
+				mutations += [("-", ref_pos-1, insertion)]
+				insertion = ""
 			if deletion: 
-				mutations += [("".join(deletion), ref_pos-1, "-")]
-				deletion = []
+				mutations += [(deletion, ref_pos-1, "-")]
+				deletion = ""
 
-			if ref_char != qry_char and qry_char != "X": 	# standard snp mismatch 
+			if ref_char != qry_char and qry_char != "X" and ref_char != "X": 	# standard snp mismatch 
 				mutations += [(ref_char, ref_pos, qry_char)]
 
 	return mutations

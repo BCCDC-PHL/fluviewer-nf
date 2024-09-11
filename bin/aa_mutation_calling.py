@@ -7,7 +7,7 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from collections import defaultdict
-from tools import flex_translate, init_aligner, pairwise_alignment
+from tools import flex_translate, init_aligner, pairwise_alignment, get_mutations
 import yaml
 from subprocess import run, PIPE
 from io import StringIO
@@ -71,42 +71,6 @@ def filter_blast_df(blast_df):
 
 	return filtered['sseqid'].to_dict()
 
-def get_mutations(ref, qry):
-	mutations = []
-	insertion = ''
-	deletion = ''
-
-	ref_pos = 0
-	for ref_char, qry_char in zip(ref, qry):
-		# increment the ref_pos at any valid reference position
-		if ref_char != '-':  
-			ref_pos += 1
-
-		if ref_char == '-':     # insertion
-			if deletion: 
-				mutations += [(deletion, ref_pos-1, "-")]
-				deletion = ""	
-			insertion += qry_char
-		elif qry_char == '-':   # deletion
-			if insertion:
-				mutations += [("-", ref_pos-1, insertion)]
-				insertion = ""
-			deletion += ref_char
-
-		else:					# neither insertion nor deletion
-			if insertion:
-				mutations += [("-", ref_pos-1, insertion)]
-				insertion = ""
-			if deletion: 
-				mutations += [(deletion, ref_pos-1, "-")]
-				deletion = ""
-
-			if ref_char != qry_char and qry_char != "X" and ref_char != "X": 	# standard snp mismatch 
-				mutations += [(ref_char, ref_pos, qry_char)]
-
-	return mutations
-
-
 def exit(outpath):
 	mutations_df = pd.DataFrame([], columns=['CHROM','REF','POS','ALT'])
 	mutations_df.to_csv(outpath, sep='\t', index=False)
@@ -169,7 +133,6 @@ def main():
 		print(f'Completed Segment: {segment}')
 
 
-
+#%%
 if __name__ == '__main__':
 	main()
-# %%
