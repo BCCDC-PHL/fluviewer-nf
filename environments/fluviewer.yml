@@ -6,6 +6,7 @@ channels:
 dependencies:
   - bbmap=39.01
   - bcftools=1.17
+  - bedtools
   - blast=2.14.1
   - bwa=0.7.17
   - samtools=1.17
@@ -18,4 +19,4 @@ dependencies:
   - pip=24.0
   - setuptools=69
   - pip:
-    - git+https://github.com/BCCDC-PHL/FluViewer.git@v0.1.11-6
+    - FluViewer==0.2.1

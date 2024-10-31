@@ -37,7 +37,7 @@ process fluviewer {
 
     errorStrategy 'ignore'
 
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}*", mode:'copy', saveAs: { filename -> filename.split("/").last() }
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}/${sample_id}*{tsv,fa,bam,bai,png}", mode:'copy', saveAs: { filename -> filename.split("/").last() }
     publishDir "${params.outdir}/${sample_id}", pattern: "*tsv", mode:'copy', saveAs: { filename -> filename.split("/").last() }
     publishDir "${params.outdir}/${sample_id}", pattern: "logs", mode:'copy', saveAs: { filename -> "fluviewer_logs" }  
   
@@ -45,20 +45,20 @@ process fluviewer {
     tuple val(sample_id), path(reads_1), path(reads_2), path(db)
 
     output:
-    tuple val(sample_id), path("${sample_id}*.bam"), emit: alignment
-    tuple val(sample_id), path("${sample_id}*.bam.bai"), emit: alignmentindex, optional: true
-    tuple val(sample_id), path("${sample_id}*report.tsv"), emit: reports, optional: true
-    tuple val(sample_id), path("${sample_id}*_consensus.fa"), emit: consensus_seqs, optional: true
-    tuple val(sample_id), path("${sample_id}_HA_consensus.fa"), emit: ha_consensus_seq, optional: true
-    tuple val(sample_id), path("${sample_id}*consensus_seqs.fa"), emit: consensus_main
-    tuple val(sample_id), path("${sample_id}*_HPAI.tsv"), emit: HPAI, optional: true
-    tuple val(sample_id), path("${sample_id}*_cov.png"), emit: coverage_plot, optional: true
-    tuple val(sample_id), path("${sample_id}*_variants.vcf"), emit: vcf, optional: true
+    tuple val(sample_id), path("${sample_id}/${sample_id}*.bam"), emit: alignment
+    tuple val(sample_id), path("${sample_id}/${sample_id}*.bam.bai"), emit: alignmentindex, optional: true
+    tuple val(sample_id), path("${sample_id}/${sample_id}*report.tsv"), emit: reports, optional: true
+    tuple val(sample_id), path("${sample_id}/${sample_id}*_consensus.fa"), emit: consensus_seqs, optional: true
+    tuple val(sample_id), path("${sample_id}/${sample_id}_HA_consensus.fa"), emit: ha_consensus_seq, optional: true
+    tuple val(sample_id), path("${sample_id}/${sample_id}*consensus_seqs.fa"), emit: consensus_main
+    tuple val(sample_id), path("${sample_id}/${sample_id}*_HPAI.tsv"), emit: HPAI, optional: true
+    tuple val(sample_id), path("${sample_id}/${sample_id}*_plot.png"), emit: coverage_plot, optional: true
+    //tuple val(sample_id), path("${sample_id}/${sample_id}*_variants.vcf"), emit: vcf, optional: true
     tuple val(sample_id), path("logs"), emit: fluviewer_logs
     tuple val(sample_id), path("${sample_id}_fluviewer_provenance.yml"), emit: provenance
-    tuple val(sample_id), path("${sample_id}*_mapping_refs.fa"), emit: ref_seqs_for_mapping, optional: true
-    tuple val(sample_id), path("${sample_id}_contigs_blast.tsv"), emit: contig_blast_results, optional: true
-    tuple val(sample_id), path("${sample_id}*.png"), emit: depth_cov_plot, optional: true
+    tuple val(sample_id), path("${sample_id}/${sample_id}*_mapping_refs.fa"), emit: ref_seqs_for_mapping, optional: true
+    tuple val(sample_id), path("${sample_id}/${sample_id}_contigs_blast.tsv"), emit: contig_blast_results, optional: true
+    tuple val(sample_id), path("${sample_id}/${sample_id}*.png"), emit: depth_cov_plot, optional: true
 
     script:
     """
@@ -72,20 +72,16 @@ process fluviewer {
     printf -- "      database_sha256: \$(shasum -a 256 ${db}|awk '{print \$1}')\\n" >> ${sample_id}_fluviewer_provenance.yml
   
     EXITCODE=0
-    (fluviewer \
-	--threads ${task.cpus} \
-	--forward-reads ${reads_1} \
-	--reverse-reads ${reads_2} \
-	--outdir . \
-	--output-name ${sample_id} \
-	--db ${db} \
-	--min-depth ${params.min_depth}  \
-	--min-mapping-quality ${params.min_q} \
-	--min-identity ${params.min_ident} \
-	--max-memory 40 \
-	--disable-garbage-collection \
-	--skip-depth-normalization \
-	--force && EXITCODE=\$?) \
+    (FluViewer \
+	-T ${task.cpus} \
+	-f ${reads_1} \
+	-r ${reads_2} \
+	-n ${sample_id} \
+	-d ${db} \
+	-D ${params.min_depth} \
+	-q ${params.min_q} \
+	-i ${params.min_ident} \
+	-g && EXITCODE=\$?) \
 	|| EXITCODE=\$?
 
     function SAVE_LOGS {
@@ -122,26 +118,24 @@ process fluviewer {
     echo "Extracting NA and HA consensus sequences..."
 
 
-    if [ `grep "|HA|" ${sample_id}*consensus_seqs.fa` ]; then 
-        grep -A1 "|HA|" ${sample_id}*consensus_seqs.fa > ${sample_id}_HA_consensus.fa
+    if [ `grep "|HA|" ${sample_id}/${sample_id}*consensus_seqs.fa` ]; then 
+        grep -A1 "|HA|" ${sample_id}/${sample_id}*consensus_seqs.fa > ${sample_id}/${sample_id}_HA_consensus.fa
     else
         echo "No HA consensus sequence generated."
     fi
 
-    if [ `grep "|NA|" ${sample_id}*consensus_seqs.fa` ]; then 
-        grep -A1 "|NA|" ${sample_id}*consensus_seqs.fa > ${sample_id}_NA_consensus.fa
+    if [ `grep "|NA|" ${sample_id}/${sample_id}*consensus_seqs.fa` ]; then 
+        grep -A1 "|NA|" ${sample_id}/${sample_id}*consensus_seqs.fa > ${sample_id}/${sample_id}_NA_consensus.fa
     else
         echo "No NA consensus sequence generated."
     fi
 
-    if [[ ! -f ${sample_id}_HA_consensus.fa ]]; then
+    if [[ ! -f ${sample_id}/${sample_id}_HA_consensus.fa ]]; then
         echo "HA segment consensus not generated. Skipping FindCleave.py..."
     else
-        FindCleave.py -i ${sample_id}_HA_consensus.fa -o ${sample_id}_HPAI.tsv
+        FindCleave.py -i ${sample_id}/${sample_id}_HA_consensus.fa -o ${sample_id}/${sample_id}_HPAI.tsv
         echo "Finished running FindCleave.py."
     fi
-
-    cp analysis_by_stage/*_blast_contigs/${sample_id}_contigs_blast.tsv .
 
     """
 }
