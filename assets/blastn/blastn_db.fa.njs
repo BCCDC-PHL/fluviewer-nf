@@ -6,7 +6,7 @@
   "description": "blastn_db.fa",
   "number-of-letters": 53873,
   "number-of-sequences": 32,
-  "last-updated": "2024-11-26T12:28:00",
+  "last-updated": "2024-12-09T12:44:00",
   "number-of-volumes": 1,
   "bytes-total": 54089,
   "bytes-to-cache": 14009,
