@@ -43,7 +43,7 @@ def read_coverage_data(input_file: Path) -> Dict[str, pd.DataFrame]:
         )
         
         # Store grouped DataFrames directly
-        coverage_data = {seg_name.split("|")[1] : sub_df for seg_name, sub_df in df.groupby('segment')}
+        coverage_data = {seg_name.split("|")[0] : sub_df for seg_name, sub_df in df.groupby('segment')}
         
         logging.info(f"Successfully processed {len(coverage_data)} segments")
         return coverage_data
