@@ -3,7 +3,7 @@ import argparse
 import pysam
 import sys
 
-def write_pileup(bamfile_path, output_path, min_base_quality=0, min_mapping_quality=0):
+def write_pileup(bamfile_path, output_path, window_size=10, min_base_quality=0, min_mapping_quality=0):
     """
     Generate pileup statistics for each position in each reference sequence from a BAM file.
     
@@ -17,7 +17,7 @@ def write_pileup(bamfile_path, output_path, min_base_quality=0, min_mapping_qual
     
     with pysam.AlignmentFile(bamfile_path, "rb") as bamfile, open(output_path, 'w') as outfile:
 
-        outfile.write("\t".join(["contig", "position", "depth", "A", "C", "G", "T",  "del", "N", 'base', 'window']) + '\n')
+        outfile.write("\t".join(["contig", "position", "depth", "A", "C", "G", "T",  "del", "N", 'base', 'max_freq', 'window']) + '\n')
 
         # Iterate through each reference sequence in the BAM file
         for reference in bamfile.references:
@@ -50,9 +50,8 @@ def write_pileup(bamfile_path, output_path, min_base_quality=0, min_mapping_qual
                 max_freq = max(base_freqs) / depth if depth != 0 else 0
                 max_freq = round(max_freq,2)
 
-                sliding_window.append(top_base)
-
-                if len(sliding_window) > 10:
+            
+                if len(sliding_window) > int(window_size):
                     sliding_window.pop(0)
 
                 # Prepare output
@@ -67,12 +66,15 @@ def write_pileup(bamfile_path, output_path, min_base_quality=0, min_mapping_qual
                     freqs['-'],
                     freqs['N'], 
                     top_base,
+                    max_freq,
                     "".join(sliding_window)
                 ]
 
                 outputs = [str(x) for x in outputs]
                 
                 outfile.write("\t".join(outputs) + '\n')
+
+                sliding_window.append(top_base)
             
 
 
@@ -81,6 +83,7 @@ def parse_args():
     parser.add_argument('-i', '--input', required=True, help='BAM file of reads aligned to reference' )
     parser.add_argument('-b', '--min-base-qual', default=0, help='Minimum base quality to include base in pileup. Default: 0' )
     parser.add_argument('-m', '--min-map-qual', default=0, help='Minimum mapping quality to include a read in pileup. Default: 0' )
+    parser.add_argument('-w', '--window-size', default=10, help='Number of bases to display in the sliding window column. Default: 10' )
     parser.add_argument('-o', '--output', required=True, help='Output path of pileup in TSV format' )
  
     return parser.parse_args()
@@ -88,4 +91,4 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    write_pileup(args.input, args.output, args.min_base_qual, args.min_map_qual)
+    write_pileup(args.input, args.output, args.window_size, args.min_base_qual, args.min_map_qual)
