@@ -1,15 +1,18 @@
 #%%
 import os, sys, re
-import pandas as pd, numpy as np
+import numpy as np
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio import Align
 from Bio.SeqRecord import SeqRecord
 
+BASE_DICT = dict(zip(list("ACGT"), range(4)))
 
-def init_aligner(mode='global', open_gap=-1.0, x_gap=-0.1):
+def init_aligner(mode='global', match=2, mismatch=-1, open_gap=-10, x_gap=-0.5):
 	aligner = Align.PairwiseAligner()
 	aligner.mode = mode
+	aligner.match_score = match
+	aligner.mismatch_score = mismatch
 	aligner.open_gap_score = open_gap
 	aligner.extend_gap_score = x_gap
 	aligner.target_end_gap_score = 0.0
@@ -101,10 +104,13 @@ def get_mutations(ref, qry):
 	deletion = ''
 
 	ref_pos = 0
+	qry_pos = 0
 	for ref_char, qry_char in zip(ref, qry):
 		# increment the ref_pos at any valid reference position
 		if ref_char != '-':  
 			ref_pos += 1
+		if qry_pos != '-':
+			qry_pos += 1
 
 		if ref_char == '-':     # insertion
 			if deletion: 
@@ -125,7 +131,85 @@ def get_mutations(ref, qry):
 				mutations += [(deletion, ref_pos-1, "-")]
 				deletion = ""
 
-			if ref_char != qry_char and qry_char != "X" and ref_char != "X": 	# standard snp mismatch 
+			if ref_char != qry_char and qry_char not in ['X', 'N'] and ref_char not in ['X', 'N']: # standard snp mismatch 
 				mutations += [(ref_char, ref_pos, qry_char)]
 
 	return mutations
+
+def get_nt_mutations(ref, qry):
+	mutations = []
+	insertion = ''
+	deletion = ''
+
+	ref_pos = 0
+	qry_pos = 0
+	for ref_char, qry_char in zip(ref, qry):
+		# increment the ref_pos at any valid reference position
+		if ref_char != '-':  
+			ref_pos += 1
+		if qry_pos != '-':
+			qry_pos += 1
+
+		if ref_char == '-':     # insertion
+			if deletion: 
+				mutations += [(deletion, ref_pos-1, "-", qry_pos)]
+				deletion = ""	
+			insertion += qry_char
+		elif qry_char == '-':   # deletion
+			if insertion:
+				mutations += [("-", ref_pos-1, insertion, qry_pos)]
+				insertion = ""
+			deletion += ref_char
+
+		else:					# neither insertion nor deletion
+			if insertion:
+				mutations += [("-", ref_pos-1, insertion, qry_pos)]
+				insertion = ""
+			if deletion: 
+				mutations += [(deletion, ref_pos-1, "-", qry_pos)]
+				deletion = ""
+
+			if ref_char != qry_char and qry_char not in ['X', 'N'] and ref_char not in ['X', 'N']: # standard snp mismatch 
+				mutations += [(ref_char, ref_pos, qry_char, qry_pos)]
+
+	return mutations
+
+# def get_nt_mutations(ref, qry, pileup_dict):
+# 	mutations = []
+# 	insertion = ''
+# 	deletion = ''
+
+# 	ref_pos = 0
+# 	qry_pos = 0
+# 	for ref_char, qry_char in zip(ref, qry):
+# 		# increment the ref_pos at any valid reference position
+# 		if ref_char != '-':  
+# 			ref_pos += 1
+# 		if qry_pos != '-':
+# 			qry_pos += 1
+
+# 		if ref_char == '-':     # insertion
+# 			if deletion: 
+# 				mutations += [(deletion, ref_pos-1, "-", '.')]
+# 				deletion = ""	
+# 			insertion += qry_char
+# 		elif qry_char == '-':   # deletion
+# 			if insertion:
+# 				mutations += [("-", ref_pos-1, insertion, '.')]
+# 				insertion = ""
+# 			deletion += ref_char
+
+# 		else:					# neither insertion nor deletion
+# 			if insertion:
+# 				mutations += [("-", ref_pos-1, insertion, '.')]
+# 				insertion = ""
+# 			if deletion: 
+# 				mutations += [(deletion, ref_pos-1, "-", '.')]
+# 				deletion = ""
+
+# 			if ref_char != qry_char and qry_char not in ['X', 'N'] and ref_char not in ['X', 'N']: # standard snp mismatch 
+# 				pileup = pileup_dict[qry_pos]
+# 				vaf = pileup[BASE_DICT[qry_char]] / pileup[4] if pileup[4] != 0 else 0
+# 				mutations += [(ref_char, ref_pos, qry_char, round(vaf, 2), pileup[4], pileup[5])]
+
+# 	return mutations
