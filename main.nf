@@ -12,8 +12,8 @@ include { pipeline_provenance } from './modules/provenance.nf'
 include { collect_provenance }  from './modules/provenance.nf'
 include { fastp }               from './modules/fastp.nf'
 include { cutadapt}             from './modules/cutadapt.nf'
-include { normalize_depth }     from './modules/fluviewer.nf'
-include { fluviewer }           from './modules/fluviewer.nf'
+include { sample_reads }     	from './modules/assembly.nf'
+include { assembly }           	from './modules/assembly.nf'
 include { multiqc }             from './modules/multiqc.nf'
 include { fastqc }              from './modules/fastqc.nf'
 include { clade_calling }       from './modules/clade_calling.nf'
@@ -22,10 +22,13 @@ include { pull_genoflu }        from './modules/genoflu.nf'
 include { checkout_genoflu }    from './modules/genoflu.nf'
 include { genoflu }             from './modules/genoflu.nf'
 
+include { ref_mapping }    from './workflows/ref_mapping.nf'
+
+
 
 // prints to the screen and to the log
 log.info """
-  FluViewer Pipeline
+  Flu Scanner Pipeline
   ===================================
   projectDir        : ${projectDir}
   launchDir         : ${launchDir}
@@ -57,24 +60,16 @@ workflow {
 
     ch_primers = Channel.fromPath(params.primer_path)
 
-    ch_db = Channel.fromPath(params.db)
-
     if (params.samplesheet_input != 'NO_FILE') {
 	ch_fastq_input = Channel.fromPath(params.samplesheet_input).splitCsv(header: true).map{ it -> [it['ID'], it['R1'], it['R2']] }
     } else {
 	ch_fastq_input = Channel.fromFilePairs( params.fastq_search_path, flat: true ).map{ it -> [it[0].split('_')[0], it[1], it[2]] }.unique{ it -> it[0] }
     }
 
-    ch_reference_db = Channel.of([file(params.blastx_subtype_db).parent, file(params.blastx_subtype_db).name]).first()
+    ch_aa_database = Channel.of([file(params.aa_database).parent, file(params.aa_database).name]).first()
+    ch_nt_database = Channel.of([file(params.nt_database).parent, file(params.nt_database).name]).first()
 
     main:
-
-    if (params.fastq_input == 'NO_FILE' && params.samplesheet_input == 'NO_FILE') {
-	error "ERROR: Missing required inputs. One of '--fastq_input' or '--samplesheet_input' must be provided."
-    }
-    if (params.db == 'NO_FILE') {
-	error "ERROR: Missing required inputs. '--db' parameter is mandatory."
-    }
 
     // Provenance channel starts with just the sample IDs
     // These will be joined to various provenance files as they are generated
@@ -88,26 +83,31 @@ workflow {
     cutadapt(fastp.out.trimmed_reads.combine(ch_primers))
     fastqc(cutadapt.out.primer_trimmed_reads)
 
-    normalize_depth(cutadapt.out.primer_trimmed_reads)
+    sample_reads(cutadapt.out.primer_trimmed_reads)
 
-    // Run FluViewer 
-    fluviewer(normalize_depth.out.normalized_reads.combine(ch_db))
+    // Run assembly 
+    assembly(sample_reads.out.reads)
 
     //Collect al the relevant filesfor multiqc
     ch_fastqc_collected = fastqc.out.zip.map{ it -> [it[1], it[2]]}.collect()
     multiqc(fastp.out.json.mix( cutadapt.out.log, ch_fastqc_collected ).collect().ifEmpty([]) )
  
+    ref_mapping(
+        ch_fastq_input,
+        assembly.out.contigs,
+        ch_nt_database
+    )
+
     //Call clades for H1 and H3 samples
-    clade_calling(fluviewer.out.ha_consensus_seq)
+    //clade_calling(ref_mapping.out.ha_consensus_seq)
      
-    snp_calling(fluviewer.out.consensus_main, ch_reference_db)
+    snp_calling(ref_mapping.out.consensus, ch_aa_database)
    
     pull_genoflu(params.genoflu_github_url)
 
     checkout_genoflu(pull_genoflu.out.repo, params.genoflu_version)
 
-    genoflu(fluviewer.out.consensus_main.combine(pull_genoflu.out.repo))
-
+    genoflu(ref_mapping.out.consensus.combine(pull_genoflu.out.repo))
 
     //
     // Provenance collection processes
@@ -118,9 +118,9 @@ workflow {
     ch_provenance = ch_provenance.join(hash_files.out.provenance).map{ it ->      [it[0], it[1] << it[2]] }
     ch_provenance = ch_provenance.join(fastp.out.provenance).map{ it ->           [it[0], it[1] << it[2]] }
     ch_provenance = ch_provenance.join(cutadapt.out.provenance).map{ it ->        [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(normalize_depth.out.provenance).map{ it -> [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(fluviewer.out.provenance).map{ it ->       [it[0], it[1] << it[2]] }    
-    ch_provenance = ch_provenance.join(clade_calling.out.provenance).map{ it ->   [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(sample_reads.out.provenance).map{ it ->    [it[0], it[1] << it[2]] }
+    ch_provenance = ch_provenance.join(assembly.out.provenance).map{ it ->        [it[0], it[1] << it[2]] }    
+    //ch_provenance = ch_provenance.join(clade_calling.out.provenance).map{ it ->   [it[0], it[1] << it[2]] }
     ch_provenance = ch_provenance.join(snp_calling.out.provenance).map{ it ->     [it[0], it[1] << it[2]] }
     ch_provenance = ch_provenance.join(genoflu.out.provenance).map{ it ->         [it[0], it[1] << it[2]] }
     collect_provenance(ch_provenance)
