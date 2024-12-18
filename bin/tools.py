@@ -1,10 +1,14 @@
 #%%
 import os, sys, re
 import numpy as np
+import pandas as pd 
+from typing import Tuple, List
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio import Align
 from Bio.SeqRecord import SeqRecord
+from functools import partial
+import gzip 
 
 BASE_DICT = dict(zip(list("ACGT"), range(4)))
 
@@ -136,80 +140,64 @@ def get_mutations(ref, qry):
 
 	return mutations
 
-def get_nt_mutations(ref, qry):
-	mutations = []
-	insertion = ''
-	deletion = ''
 
-	ref_pos = 0
-	qry_pos = 0
-	for ref_char, qry_char in zip(ref, qry):
-		# increment the ref_pos at any valid reference position
-		if ref_char != '-':  
-			ref_pos += 1
-		if qry_pos != '-':
-			qry_pos += 1
+SEGMENTS = 'PB2 PB1 PA HA NP NA M NS'.split()
 
-		if ref_char == '-':     # insertion
-			if deletion: 
-				mutations += [(deletion, ref_pos-1, "-", qry_pos)]
-				deletion = ""	
-			insertion += qry_char
-		elif qry_char == '-':   # deletion
-			if insertion:
-				mutations += [("-", ref_pos-1, insertion, qry_pos)]
-				insertion = ""
-			deletion += ref_char
+def read_vcf(file_path: str , max_header_lines=300) -> Tuple[pd.DataFrame, List[str]]:
+    """
+    Parse a Variant Call Format (VCF) file into a pandas DataFrame and header list.
+    
+    Args:
+        file_path: Path to the VCF file
+        
+    Returns:
+        Tuple containing:
+            - pandas DataFrame with VCF data
+            - List of header lines (including metadata)
+    """
+    # Store header lines
+    header_lines = []
+    
+    # Read header lines
+    read_function = partial(open, mode='r') if not file_path.endswith('.gz') else partial(gzip.open, mode='rt')
 
-		else:					# neither insertion nor deletion
-			if insertion:
-				mutations += [("-", ref_pos-1, insertion, qry_pos)]
-				insertion = ""
-			if deletion: 
-				mutations += [(deletion, ref_pos-1, "-", qry_pos)]
-				deletion = ""
+    with read_function(file_path) as infile:
+        line_count = 0 
+        line = infile.readline()
+        while not line.lstrip('#').startswith("CHROM"):
+            line_count += 1
+            header_lines.append(line.strip())
+            line = infile.readline()
 
-			if ref_char != qry_char and qry_char not in ['X', 'N'] and ref_char not in ['X', 'N']: # standard snp mismatch 
-				mutations += [(ref_char, ref_pos, qry_char, qry_pos)]
+            if line_count > max_header_lines:
+                print(f"ERROR: Exceeded {max_header_lines} lines to search for the CHROM start point.")
+                sys.exit(1)
 
-	return mutations
+        header_lines.append(line.strip())
+        
+        column_names = header_lines[-1].lstrip("#").split("\t")
 
-# def get_nt_mutations(ref, qry, pileup_dict):
-# 	mutations = []
-# 	insertion = ''
-# 	deletion = ''
+        df = pd.read_csv(infile, sep='\t', names=column_names)
+    
+    return df, header_lines
 
-# 	ref_pos = 0
-# 	qry_pos = 0
-# 	for ref_char, qry_char in zip(ref, qry):
-# 		# increment the ref_pos at any valid reference position
-# 		if ref_char != '-':  
-# 			ref_pos += 1
-# 		if qry_pos != '-':
-# 			qry_pos += 1
 
-# 		if ref_char == '-':     # insertion
-# 			if deletion: 
-# 				mutations += [(deletion, ref_pos-1, "-", '.')]
-# 				deletion = ""	
-# 			insertion += qry_char
-# 		elif qry_char == '-':   # deletion
-# 			if insertion:
-# 				mutations += [("-", ref_pos-1, insertion, '.')]
-# 				insertion = ""
-# 			deletion += ref_char
+def write_vcf(df, header_lines, output_path):
+    """
+    Write out a Variant Call Format (VCF) file using a Pandas df, list of headers, and output path
+    
+    Args:
+        file_path: Path to the VCF file
+        
+    Returns:
+        Tuple containing:
+            - pandas DataFrame with VCF data
+            - List of header lines (including metadata)
+    """
 
-# 		else:					# neither insertion nor deletion
-# 			if insertion:
-# 				mutations += [("-", ref_pos-1, insertion, '.')]
-# 				insertion = ""
-# 			if deletion: 
-# 				mutations += [(deletion, ref_pos-1, "-", '.')]
-# 				deletion = ""
+    # Read header lines
+    with open(output_path, 'w') as outfile:
+        for line in header_lines:
+            outfile.write(line + '\n')
 
-# 			if ref_char != qry_char and qry_char not in ['X', 'N'] and ref_char not in ['X', 'N']: # standard snp mismatch 
-# 				pileup = pileup_dict[qry_pos]
-# 				vaf = pileup[BASE_DICT[qry_char]] / pileup[4] if pileup[4] != 0 else 0
-# 				mutations += [(ref_char, ref_pos, qry_char, round(vaf, 2), pileup[4], pileup[5])]
-
-# 	return mutations
+        df.to_csv(outfile, sep='\t', index=False, header=False)
