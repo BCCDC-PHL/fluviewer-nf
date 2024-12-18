@@ -157,13 +157,14 @@ process snpeff_annotation {
 
     conda "${projectDir}/environments/fluviewer.yml"
 
-    publishDir "${params.outdir}/${sample_id}/vcf", pattern: "${sample_id}*{vcf}", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}/vcf", pattern: "${sample_id}*{vcf,tsv}", mode: 'copy'
 
     input: 
 	tuple val(sample_id), path(vcf), path(vcf_index), path(snpeff_db_path)
 	
 	output:
     tuple val(sample_id), path("${sample_id}*vcf"), emit: vcf
+    tuple val(sample_id), path("${sample_id}*tsv"), emit: vcf_filter
     tuple val(sample_id), path("${sample_id}*provenance.yml"), emit: provenance
 
     script:
@@ -176,6 +177,28 @@ process snpeff_annotation {
     printf -- "  - tool_name: bcftools\\n    tool_version: \$(bcftools --version | head -n1 | cut -d' ' -f2)\\n"   >> ${sample_id}_snpeff_provenance.yml
 
     run_snpeff.py --input ${vcf} --config ${snpeff_db_path} --outname ${sample_id}
+
+    reformat_vcf.py --input ${sample_id}_all_anno.vcf --output ${sample_id}_all_muts.tsv
+    """
+
+}
+
+process mutation_watch {
+    tag { sample_id }
+
+    conda "${projectDir}/environments/fluviewer.yml"
+
+    publishDir "${params.outdir}/${sample_id}/vcf", pattern: "${sample_id}*{tsv}", mode: 'copy'
+
+    input: 
+	tuple val(sample_id), path(vcf_filter), path(watchlist)
+	
+	output:
+    tuple val(sample_id), path("${sample_id}*tsv"), emit: vcf
+    script:
+
+    """
+    mutation_watcher.py --input ${vcf_filter} --watchlist ${watchlist} --output ${sample_id}_mut_watch.tsv
     """
 
 }
