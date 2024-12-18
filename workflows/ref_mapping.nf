@@ -17,6 +17,7 @@ include { make_coverage_plot }  from '../modules/plotting.nf'
 include { mask_low_coverage }   from '../modules/ref_mapping.nf'
 include { make_consensus }      from '../modules/ref_mapping.nf'
 include { snpeff_annotation }   from '../modules/ref_mapping.nf'
+include { mutation_watch    }   from '../modules/ref_mapping.nf'
 
 
 
@@ -37,6 +38,7 @@ workflow ref_mapping {
 
         if (params.snpeff_config != 'NO_FILE') {
             snpeff_annotation(freebayes.out.vcf.combine(Channel.fromPath(params.snpeff_config)))
+            mutation_watch(snpeff_annotation.out.vcf_filter.combine(Channel.fromPath(params.mutation_watchlist)))
         }
 
         mask_low_coverage(sort_filter_sam.out.bam)

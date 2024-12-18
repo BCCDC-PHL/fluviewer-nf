@@ -101,7 +101,7 @@ workflow {
     //Call clades for H1 and H3 samples
     //clade_calling(ref_mapping.out.ha_consensus_seq)
      
-    snp_calling(ref_mapping.out.consensus, ch_aa_database)
+    //snp_calling(ref_mapping.out.consensus, ch_aa_database)
    
     pull_genoflu(params.genoflu_github_url)
 
@@ -121,7 +121,7 @@ workflow {
     ch_provenance = ch_provenance.join(sample_reads.out.provenance).map{ it ->    [it[0], it[1] << it[2]] }
     ch_provenance = ch_provenance.join(assembly.out.provenance).map{ it ->        [it[0], it[1] << it[2]] }    
     //ch_provenance = ch_provenance.join(clade_calling.out.provenance).map{ it ->   [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(snp_calling.out.provenance).map{ it ->     [it[0], it[1] << it[2]] }
+    //ch_provenance = ch_provenance.join(snp_calling.out.provenance).map{ it ->     [it[0], it[1] << it[2]] }
     ch_provenance = ch_provenance.join(genoflu.out.provenance).map{ it ->         [it[0], it[1] << it[2]] }
     collect_provenance(ch_provenance)
 
