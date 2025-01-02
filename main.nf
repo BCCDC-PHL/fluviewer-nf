@@ -21,6 +21,8 @@ include { snp_calling }         from './modules/snp_calling.nf'
 include { pull_genoflu }        from './modules/genoflu.nf'
 include { checkout_genoflu }    from './modules/genoflu.nf'
 include { genoflu }             from './modules/genoflu.nf'
+include { make_pileup }             from './modules/pileup.nf'
+include { plot_pileup }             from './modules/pileup.nf'
 
 
 // prints to the screen and to the log
@@ -92,6 +94,9 @@ workflow {
 
     // Run FluViewer 
     fluviewer(normalize_depth.out.normalized_reads.combine(ch_db))
+
+    make_pileup(fluviewer.out.alignment)
+    plot_pileup(make_pileup.out.pileup)
 
     //Collect al the relevant filesfor multiqc
     ch_fastqc_collected = fastqc.out.zip.map{ it -> [it[1], it[2]]}.collect()
