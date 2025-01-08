@@ -2,8 +2,6 @@ process make_pileup {
 
     tag { sample_id }
 
-	conda "pysam=0.22.1"
-
     publishDir "${params.outdir}/${sample_id}", pattern: "*pileup.tsv",  mode:'copy'
 
     input:
@@ -22,7 +20,7 @@ process plot_pileup {
 
     tag { sample_id }
 
-	conda "${projectDir}/environments/fluviewer.yml"
+    conda "${projectDir}/environments/fluviewer.yml"
 
     publishDir "${params.outdir}/${sample_id}/plots", pattern: "*png",  mode:'copy'
 

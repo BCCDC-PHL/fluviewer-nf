@@ -8,3 +8,4 @@ dependencies:
   - multiqc=1.15
   - fastqc=0.12.1
   - genoflu=1.05
+  - pysam=0.22
