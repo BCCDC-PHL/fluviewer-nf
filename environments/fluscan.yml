@@ -1,4 +1,4 @@
-name: flu-scan
+name: fluscan
 channels:
   - conda-forge
   - bioconda
