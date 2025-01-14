@@ -21,11 +21,12 @@ process sample_reads {
     let "TARGET_COUNT = ${params.target_depth} * ${params.genome_size}"
 
     if [ \${READ_COUNT_1} -gt \${TARGET_COUNT} ]; then 
-        seqtk sample -s 12 ${reads_1} \${TARGET_COUNT} > ${sample_id}_R1_sample.fq
-        seqtk sample -s 12 ${reads_2} \${TARGET_COUNT} > ${sample_id}_R2_sample.fq
-
-        gzip ${sample_id}_R1_sample.fq
-        gzip ${sample_id}_R2_sample.fq
+        sample_reads.py -s 12 -n \${TARGET_COUNT} \
+        -f1 ${reads_1} \
+        -f2 ${reads_2}  \
+        -o1 ${sample_id}_R1_sample.fq.gz \
+        -o2 ${sample_id}_R2_sample.fq.gz
+        
         echo "Completed random downsample on reads.\nOriginal read count: \${READ_COUNT_1} \nNew read count: \${TARGET_COUNT}"
     else
         ln -s ${reads_1} ${sample_id}_R1_sample.fq.gz
