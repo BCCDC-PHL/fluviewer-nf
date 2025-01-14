@@ -1,9 +1,7 @@
-[![Tests](https://github.com/BCCDC-PHL/fluviewer-nf/actions/workflows/tests.yml/badge.svg)](https://github.com/BCCDC-PHL/fluviewer-nf/actions/workflows/tests.yml)
+# fluscan-nf
 
-# fluviewer-nf
-
-This is a Nextflow pipeline for running the [FluViewer](https://github.com/BCCDC-PHL/FluViewer) analysis tool and other custom modules
-to obtain consensus sequences, HA and NA subtypes, clade calls, and amino acid mutations for Influenza A WGS.  
+This is a Nextflow pipeline for reference-based read mapping with a strong focus on calling nucleotide and amino acid mutations for Influenza A short-read sequence data. 
+The pipeline further produces QC reports, coverage plots, pileups, consensus sequences, HA and NA subtype calls, clade calls, and more. 
 
 ## Analyses
 
@@ -11,32 +9,50 @@ to obtain consensus sequences, HA and NA subtypes, clade calls, and amino acid m
 - Primer removal with [cutadapt](https://github.com/marcelm/cutadapt)
 - FASTQ quality reporting with [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
 - Aggregate the reports with [MultiQC](https://multiqc.info/)
-- Sequence analysis with [BCCDC-PHL/FluViewer](https://github.com/BCCDC-PHL/FluViewer)
-- Extract HPAI motif (applies to H5 sequences only)
 - Clade calls for H1, H3 and H5 influenza using [Nextclade](https://github.com/nextstrain/nextclade)
-- Amino acid SNP calls against a specified reference
+- Nucleotide variant calling using FreeBayes
+- Annotation of amino acid variant calls using SnpEff
 - Genotype calls using GenoFLU against curated database
 
 ```mermaid
 flowchart TD
-  fastq_input[FASTQ Input] --> fastp(fastp)
-  fastp -- trimmed_reads --> cutadapt(cutadapt)
-  cutadapt -- qc_stats --> multiqc(multiqc)
-  cutadapt -- primer_trimmed_reads --> fastqc(fastqc)
-  fastqc -- qc_stats --> multiqc
-  multiqc --> multiqc_report[MultiQC Report]
-  cutadapt -- primer_trimmed_reads --> normalize_reads(normalize_reads)
-  normalize_reads -- normalized_reads --> fluviewer(fluviewer)
-  fluviewer_db[FluViewer DB] --> fluviewer
-  fluviewer  -- ha_consensus --> clade_calling(clade_calling)
-  clade_calling --> clade_calls[clade-calls]
-  fluviewer -- consensus_main --> snp_caling(snp_calling)
-  snp_calling --> snp_calls[snp-calls]
-  fluviewer -- consensus_main --> genoflu(genoflu)
-  fluviewer -->  segment_coverage_plots[Segment Coverage Plots]
-  fluviewer --> consensus_sequence[Consensus Sequence]
-  fluviewer --> variants[Variants VCF]
-  genoflu --> genoflu_tsv[GenoFLU tsv]
+    %% Input channels and initial processes
+    input[FastQ Input] --> hash[hash_files]
+    input --> fastp
+    fastp --> cutadapt
+    primers[Primers] --> cutadapt
+    cutadapt --> fastqc
+    cutadapt --> sample_reads
+    sample_reads --> assembly
+
+    %% MultiQC inputs
+    fastp -- json --> multiqc
+    cutadapt -- log --> multiqc
+    fastqc -- zip --> multiqc
+
+    %% Reference mapping and variant calling
+    assembly -- contigs --> blastn
+    nt_db[NT Database] --> blastn
+    input --> map_reads
+    blastn -- reference --> map_reads
+    map_reads --> sort_filter_sam
+    sort_filter_sam -- bam --> make_pileup
+    sort_filter_sam -- depth --> make_coverage_plot
+    sort_filter_sam -- bam --> freebayes
+    blastn -- reference --> freebayes
+    
+    %% SNPEff annotation
+    freebayes -- vcf --> snpeff_annotation
+    snpeff_config[SNPEff Config] --> snpeff_annotation
+    snpeff_annotation --> mutation_watch
+    mutation_watchlist[Mutation Watchlist] --> mutation_watch
+
+    %% Consensus generation
+    sort_filter_sam -- bam --> mask_low_coverage
+    freebayes -- vcf --> make_consensus
+    blastn -- reference --> make_consensus
+    mask_low_coverage -- masked_bed --> make_consensus
+
 ```
 
 
@@ -47,130 +63,42 @@ Short read Illumina sequences, files ending in '.fastq.gz', '.fq.gz', '.fastq', 
 ## Usage
 
 **Additional requirements for use:**  
-- [optional] provide a database for use.  If none is provided the tool should use the database bundled with FluViewer.
-  - NOTE: if you choose to use a custom database, you will need to make sure that the sequences and headers are formatted as FluViewer requires.  See https://github.com/BCCDC-PHL/FluViewer for details.
 - Package management is via Conda.  In addition, note the `-profile` and `--cache` switches, essential for proper operation of Conda on BCCDC systems.
-    - NOTE: if you have problems when first running the pipeline, it can be due to problems resolving the Conda environment.  If this is the case you can use mamba instead.
+- NOTE: if you have problems when first running the pipeline, it can be due to problems resolving the Conda environment.  If this is the case you can use mamba instead.
 
-
-**Optional arguments:**
-
-For a full list of optional arguments, see: https://github.com/BCCDC-PHL/FluViewer
-
-| Argument              | Description                                                                                      | Default Value   |
-|-----------------------|--------------------------------------------------------------------------------------------------|----------------:|
-| `--target_depth`      | Depth to normalize coverage to, where sufficient depth is available in inputs.                   |             200 |
-| `--min_depth`         | Minimum read depth for base calling.                                                             |              20 |
-| `--min_q`             | Minimum PHRED score for base quality and mapping quality.                                        |              20 |
-| `--min_cov`           | Minimum coverage of database reference sequence by contig, percentage.                           |              25 |
-| `--min_ident`         | Minimum nucleotide sequence identity between database reference sequence and contig (percentage) |              95 |
 
 **Example command:**
 ```
-nextflow run BCCDC-PHL/fluviewer-nf \
-  -r v0.3.0 \
+nextflow run BCCDC-PHL/fluscan-nf \
+  -r v0.1.0 \
   -profile conda \
   --cache ~/.conda/envs \
   --fastq_input /path/to/your_fastqs \
-  --db /path/to/FluViewer_db.fa \
   --outdir /path/to/output_dir
 ```
 
 ## Output
 
-Outputs are written to the directory specified with the `--outdir` parameter. Below that are individual folders for each sample, containing the results of FluViewer, SNP calling, and clade calling.
+Outputs are written to the directory specified with the `--outdir` parameter. 
+One folder is produced per sample 
 
-```
-<outdir>
-├── <run_name>_fluviewer-nf_multiqc_report.html
-├── <run_name>_fluviewer-nf_nextflow_report.html
-├── <run_name>_fluviewer-nf_nextflow_timeline.html
-└── <sample-id>
-    ├── <sample-id>.fastp.html
-    ├── <sample-id>.fastp.json
-    ├── <sample-id>_<date-time>_provenance.yml
-    ├── <sample-id>_HA_consensus.fa
-    ├── <sample-id>_HPAI.tsv
-    ├── <sample-id>_NA_consensus.fa
-    ├── <sample-id>_alignment.bam
-    ├── <sample-id>_alignment.bam.bai
-    ├── <sample-id>_consensus_seqs.fa
-    ├── <sample-id>_contigs_blast.tsv
-    ├── <sample-id>_depth_of_cov.png
-    ├── <sample-id>_fluviewer_provenance.yml
-    ├── <sample-id>_genoflu.tsv
-    ├── <sample-id>_mapping_refs.fa
-    ├── <sample-id>_report.tsv
-    ├── <sample-id>_variants.vcf
-    ├── clade-calls
-    │   ├── <sample-id>_nextclade.aligned.fasta.gz
-    │   ├── <sample-id>_nextclade.csv
-    │   ├── <sample-id>_nextclade.json
-    │   ├── <sample-id>_nextclade.ndjson
-    │   ├── <sample-id>_nextclade.tsv
-    │   ├── <sample-id>_nextclade_HA1.translation.fasta.gz
-    │   ├── <sample-id>_nextclade_HA2.translation.fasta.gz
-    │   └── <sample-id>_nextclade_SigPep.translation.fasta.gz
-    ├── fluviewer_logs
-    │   ├── 01_assemble_contigs
-    │   │   ├── spades_stderr.txt
-    │   │   └── spades_stdout.txt
-    │   ├── 02_blast_contigs
-    │   │   ├── blastn_contigs_stderr.txt
-    │   │   └── blastn_contigs_stdout.txt
-    │   ├── 03_scaffolding
-    │   │   ├── blastn_scaffolds_stderr.txt
-    │   │   └── blastn_scaffolds_stdout.txt
-    │   ├── 04_read_mapping
-    │   │   ├── bwa_index_stderr.txt
-    │   │   ├── bwa_index_stdout.txt
-    │   │   ├── bwa_mem_stderr.txt
-    │   │   ├── bwa_mem_stdout.txt
-    │   │   ├── samtools_index_stderr.txt
-    │   │   ├── samtools_index_stdout.txt
-    │   │   ├── samtools_view_stderr.txt
-    │   │   └── samtools_view_stdout.txt
-    │   ├── 05_variant_calling
-    │   │   ├── freebayes_stderr.txt
-    │   │   └── freebayes_stdout.txt
-    │   ├── 06_consensus_calling
-    │   │   ├── bcftools_consensus_stderr.txt
-    │   │   ├── bcftools_consensus_stdout.txt
-    │   │   ├── bcftools_index_stderr.txt
-    │   │   ├── bcftools_index_stdout.txt
-    │   │   ├── bcftools_view_stderr.txt
-    │   │   └── bcftools_view_stdout.txt
-    │   ├── 07_summary_reporting
-    │   │   ├── samtools_depth_stderr.txt
-    │   │   ├── samtools_depth_stdout.txt
-    │   │   ├── samtools_idxstats_stderr.txt
-    │   │   └── samtools_idxstats_stdout.txt
-    │   ├── fluviewer.log
-    │   ├── makeblastdb_contigs_stderr.txt
-    │   └── makeblastdb_contigs_stdout.txt
-    └── snp-calls
-        ├── <sample-id>_HA_mutations.tsv
-        ├── <sample-id>_M_mutations.tsv
-        ├── <sample-id>_NA_mutations.tsv
-        ├── <sample-id>_NP_mutations.tsv
-        ├── <sample-id>_NS_mutations.tsv
-        ├── <sample-id>_PA_mutations.tsv
-        ├── <sample-id>_PB1_mutations.tsv
-        ├── <sample-id>_PB2_mutations.tsv
-        └── pairwise
-```
+
 
 Output for each sample includes:
 
 | File                        | Description                                                                                |
 |-----------------------------|--------------------------------------------------------------------------------------------|
-| `*_report.tsv`              | contains assembly and reconstruction metrics for all segments                              |
-| `*_consensus_seqs.fa`       | multifasta containing the consesus sequences for each segment                              |
-| `*_HA_consensus.fa`         | consensus sequnce for the HA segment (extracted from the multifasta produced by FluViewer) |
-| `*_NA_consensus.fa`         | consensus sequnce for the NA segment (extracted from the multifasta produced by FluViewer) |
-| `*_depth_of_cov.png`        | line plots describing mapping coverage across all 8 flu segments                           |
-| `*_variants.vcf`            | list of mutations in variant call format (VCF) called relative to the reference sequence   |
-| `snp-calls/*_mutations.tsv` | tabular list of amino acid SNP mutations relative to the reference                         |
+| `*_consensus.fasta`         | multifasta containing the consensus sequences for each segment                              |
+| `*_ref.fasta`               | multifasta containing the optimal reference sequences selected for each segment                              |
+| `*_blast.tsv`               | BLAST search results of assembled contigs against the reference database |
+| `*_blast_filter.tsv`         | Filtered form of the BLAST search results above        |
+| `*_coverage.png`            | line plots describing mapping coverage across all 8 flu segments                           |
+| `*_pileup.tsv`              | Pileup in TSV containing raw counts of all 4 nucleotides and gaps                          |
+| `*_depth.tsv`               | Simple TSV reporting the depth values at every position in the alignment (samtools depth)    |
+| `vcf/*.vcf.gz`             | list of mutations in variant call format (VCF) called relative to the reference sequence (FreeBayes)  |
+| `vcf/*_anno.vcf`            | VCF with amino acid annotations provided by SnpEff    |
+| `vcf/*_mutations.tsv`            | Filtered, reformatted VCF used to make mutation identification easier                     |
+| `vcf/*_mut_watch.tsv`            | A filtered list of mutations that are also present on the provided watchlist          |
 | `genoflu/*_stats.tsv`       | tabular list of genotype call information for the sample's consensus sequences             |
 
 Output for each run includes:
@@ -185,8 +113,8 @@ Output for each run includes:
 For each pipeline invocation, each sample will produce a `provenance.yml` file with the following contents.  Note the below is a contrived example.  
 
 ```yml
-- pipeline_name: BCCDC-PHL/fluviewer-nf
-  pipeline_version: 0.3.0
+- pipeline_name: BCCDC-PHL/fluscan-nf
+  pipeline_version: 0.1.0
   nextflow_session_id: 59fdd919-fc28-4af5-99e0-60355b11807c
   nextflow_run_name: hopeful_bhaskara
   timestamp_analysis_start: 2024-07-15T16:30:11.150887-07:00
@@ -204,29 +132,21 @@ For each pipeline invocation, each sample will produce a `provenance.yml` file w
   tools:
     - tool_name: cutadapt
       tool_version: 4.4
-- process_name: normalize_depth
+- process_name: assembly
   tools:
-    - tool_name: bbnorm
-      tool_version: 39.01
-- process_name: fluviewer
-  tools:
-    - tool_name: fluviewer
-      tool_version: 0.1.11-6
-  databases:
-    - database_name: FluViewer_db.fa
-      database_path: /path/to/FluViewer_db.fa
-      database_sha256: c9ba1af0a637671d86a14aceac3cbfde309ae9a5bd613d75c87ba2ff390b4c48
+    - tool_name: spades
+      tool_version: v3.15.3
 process_name: nextclade
 tools:
   - tool_name: nextclade
     tool_version: 3.8.1
     subcommand: run
-- process_name: snp_caling
+- process_name: snp_calling
   tools:
-    - tool_name: blastx
+    - tool_name: blastn
       tool_version: 2.15.0+
   databases:
-    - database_name: blastx_subtype_db.fasta
+    - database_name: blastn_db.fasta
 - process_name: genoflu
   tools:
     - tool_name: genoflu
