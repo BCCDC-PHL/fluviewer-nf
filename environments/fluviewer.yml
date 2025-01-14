@@ -18,5 +18,3 @@ dependencies:
   - setuptools=69
   - snpeff=5.2
   - pysam=0.22
-  - pip:
-    - git+https://github.com/BCCDC-PHL/FluViewer.git@v0.1.11-6
