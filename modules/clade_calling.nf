@@ -11,6 +11,7 @@ process clade_calling {
 
     input:
     tuple val(sample_id), path(ha_consensus_seq)
+    tuple path(nextclade_config)
 
     output:
     tuple val(sample_id), path("*nextclade*"), emit: nextclade
@@ -29,26 +30,30 @@ process clade_calling {
             dataset="flu_h1n1pdm_ha"
             nextclade dataset get --name \$dataset --output-dir \$dataset
         else
-	    dataset=${params.h1_dataset}
+	    dataset=\$(realpath ${params.h1_dataset})
 	fi
     elif [ `grep "H3" ${ha_consensus_seq}` ]; then 
         if [ ${params.h3_dataset} == "NO_FILE" ]; then
             dataset="flu_h3n2_ha"
             nextclade dataset get --name \$dataset --output-dir \$dataset
         else
-	    dataset=${params.h3_dataset}
+	    dataset=\$(realpath ${params.h3_dataset})
     	fi
     elif [ `grep "H5" ${ha_consensus_seq}` ]; then
         if [ ${params.h5_dataset} == "NO_FILE" ]; then
             echo "WARNING: H5 subtype detected in the HA consensus file, but no H5 dataset provided. Please provide an H5 nextclade dataset with the --h5_dataset flag."
             exit 10
         else
-            dataset=${params.h5_dataset}
+            dataset=\$(realpath ${params.h5_dataset})
         fi
     else 
         echo "WARNING: None of H1, H3, or H5 were detected in the HA consensus file. No dataset available. Exiting."
         exit 10
     fi
+
+    export NEXTCLADE_DATASET_NAME=\$(grep "dbname" \${dataset}/metadata.json | cut -d' ' -f2 | sed 's/"//g; s/,//g')
+    export NEXTCLADE_DATASET_VERSION=\$(grep "date" \${dataset}/metadata.json | cut -d' ' -f2 | sed 's/"//g')
+    export NEXTCLADE_VERSION=\$(nextclade --version | cut -d' ' -f2)
 
     nextclade run \
 	--input-dataset \$dataset \
@@ -56,9 +61,15 @@ process clade_calling {
         --output-json=${sample_id}_nextclade.json \
         --output-ndjson=${sample_id}_nextclade.ndjson \
         --output-csv=${sample_id}_nextclade.csv \
-        --output-tsv=${sample_id}_nextclade.tsv \
+        --output-tsv=${sample_id}_nextclade_raw.tsv \
         --output-tree=${sample_id}_nextclade_auspice.json \
         --output-translations=${sample_id}_nextclade_{cds}.translation.fasta.gz \
         ${ha_consensus_seq}
+    
+    clean_nextclade.py \
+    --input ${sample_id}_nextclade_raw.tsv \
+    --output ${sample_id}_nextclade.tsv \
+    --config ${nextclade_config}
+
     """
 }
