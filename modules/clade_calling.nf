@@ -19,26 +19,20 @@ process clade_calling {
 
     script:
     """
-    printf -- "process_name: nextclade\\n"  >> ${sample_id}_clade_calling_provenance.yml
-    printf -- "tools:\\n"                   >> ${sample_id}_clade_calling_provenance.yml
-    printf -- "  - tool_name: nextclade\\n" >> ${sample_id}_clade_calling_provenance.yml
-    printf -- "    tool_version: \$(nextclade --version 2>&1  | cut -d ' ' -f 2)\\n" >> ${sample_id}_clade_calling_provenance.yml
-    printf -- "    subcommand: run\\n"       >> ${sample_id}_clade_calling_provenance.yml
-
     if [ `grep "H1" ${ha_consensus_seq}` ]; then
         if [ ${params.h1_dataset} == "NO_FILE" ]; then
-            dataset="flu_h1n1pdm_ha"
-            nextclade dataset get --name \$dataset --output-dir \$dataset
+            echo "WARNING: H1 subtype detected in the HA consensus file, but no H1 dataset provided. Please provide an H1 nextclade dataset with the --h1_dataset flag."
+            exit 10
         else
-	    dataset=\$(realpath ${params.h1_dataset})
-	fi
+	        dataset=\$(realpath ${params.h1_dataset})
+        fi
     elif [ `grep "H3" ${ha_consensus_seq}` ]; then 
         if [ ${params.h3_dataset} == "NO_FILE" ]; then
-            dataset="flu_h3n2_ha"
-            nextclade dataset get --name \$dataset --output-dir \$dataset
+            echo "WARNING: H3 subtype detected in the HA consensus file, but no H3 dataset provided. Please provide an H3 nextclade dataset with the --h3_dataset flag."
+            exit 10
         else
-	    dataset=\$(realpath ${params.h3_dataset})
-    	fi
+	        dataset=\$(realpath ${params.h3_dataset})
+        fi
     elif [ `grep "H5" ${ha_consensus_seq}` ]; then
         if [ ${params.h5_dataset} == "NO_FILE" ]; then
             echo "WARNING: H5 subtype detected in the HA consensus file, but no H5 dataset provided. Please provide an H5 nextclade dataset with the --h5_dataset flag."
@@ -51,8 +45,8 @@ process clade_calling {
         exit 10
     fi
 
-    export NEXTCLADE_DATASET_NAME=\$(grep "dbname" \${dataset}/metadata.json | cut -d' ' -f2 | sed 's/"//g; s/,//g')
-    export NEXTCLADE_DATASET_VERSION=\$(grep "date" \${dataset}/metadata.json | cut -d' ' -f2 | sed 's/"//g')
+    export NEXTCLADE_DATASET_NAME=\$(grep "dbname" \${dataset}/metadata.json | cut -d':' -f2 | sed 's/,//g;s/"//g;s/ //g')
+    export NEXTCLADE_DATASET_VERSION=\$(grep "date" \${dataset}/metadata.json | cut -d':' -f2 | sed 's/,//g;s/"//g;s/ //g')
     export NEXTCLADE_VERSION=\$(nextclade --version | cut -d' ' -f2)
 
     nextclade run \
@@ -71,5 +65,17 @@ process clade_calling {
     --output ${sample_id}_nextclade.tsv \
     --config ${nextclade_config}
 
+    cat <<-EOL_VERSIONS > ${sample_id}_clade_calling_provenance.yml
+    - process_name: ${task.process}
+      tools:
+      - tool_name: nextclade
+        tool_version: \${NEXTCLADE_VERSION}
+        subcommand: run
+      databases:
+      - database_name: \${NEXTCLADE_DATASET_NAME}
+        database_version: \${NEXTCLADE_DATASET_VERSION}
+        files: 
+    \$(sha256sum \$dataset/* | awk '{ printf("    - filename: \\"%s\\"\\n      sha256: \\"%s\\"\\n", \$2, \$1) }')
+    EOL_VERSIONS
     """
 }
