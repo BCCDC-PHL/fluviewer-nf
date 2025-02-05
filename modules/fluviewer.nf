@@ -45,8 +45,7 @@ process fluviewer {
     tuple val(sample_id), path(reads_1), path(reads_2), path(db)
 
     output:
-    tuple val(sample_id), path("${sample_id}*.bam"), emit: alignment
-    tuple val(sample_id), path("${sample_id}*.bam.bai"), emit: alignmentindex, optional: true
+    tuple val(sample_id), path("${sample_id}*.bam"), path("${sample_id}*.bam.bai"), emit: alignment
     tuple val(sample_id), path("${sample_id}*report.tsv"), emit: reports, optional: true
     tuple val(sample_id), path("${sample_id}*_consensus.fa"), emit: consensus_seqs, optional: true
     tuple val(sample_id), path("${sample_id}_HA_consensus.fa"), emit: ha_consensus_seq, optional: true
