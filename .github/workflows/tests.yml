@@ -21,6 +21,12 @@ jobs:
     - uses: actions/checkout@master
     - name: Create Artifacts Directory
       run: mkdir artifacts
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        architecture: x64
     - name: Install Miniconda
       run: bash .github/scripts/install_conda.sh
     - name: Install Nextflow
