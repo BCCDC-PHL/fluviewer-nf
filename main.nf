@@ -59,7 +59,6 @@ workflow {
 
     ch_fluviewer_db = Channel.fromPath(params.db)
     ch_snp_calling_db = Channel.of([file(params.blastx_subtype_db).parent, file(params.blastx_subtype_db).name]).first()
-    ch_genoflu_db = Channel.fromPath(params.genoflu_db)
 
 
     if (params.samplesheet_input != 'NO_FILE') {
@@ -108,7 +107,7 @@ workflow {
      
     snp_calling(fluviewer.out.consensus_main, ch_snp_calling_db)
 
-    genoflu(fluviewer.out.consensus_main.combine(ch_genoflu_db))
+    genoflu(fluviewer.out.consensus_main)
 
     //
     // Provenance collection processes
