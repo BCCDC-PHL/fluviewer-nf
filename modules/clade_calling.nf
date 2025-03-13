@@ -41,7 +41,7 @@ process clade_calling {
             dataset=\$(realpath ${params.h5_dataset})
         fi
     else 
-        echo "WARNING: None of H1, H3, or H5 were detected in the HA consensus file. No dataset available. Exiting."
+        echo "WARNING: None of H1, H3, or H5 were detected in the HA consensus file. Exiting."
         exit 10
     fi
 
@@ -50,7 +50,7 @@ process clade_calling {
     export NEXTCLADE_VERSION=\$(nextclade --version | cut -d' ' -f2)
 
     nextclade run \
-	--input-dataset \$dataset \
+        --input-dataset \$dataset \
         --output-fasta=${sample_id}_nextclade.aligned.fasta.gz \
         --output-json=${sample_id}_nextclade.json \
         --output-ndjson=${sample_id}_nextclade.ndjson \
@@ -68,14 +68,14 @@ process clade_calling {
     cat <<-EOL_VERSIONS > ${sample_id}_clade_calling_provenance.yml
     - process_name: ${task.process}
       tools:
-      - tool_name: nextclade
-        tool_version: \${NEXTCLADE_VERSION}
-        subcommand: run
+        - tool_name: nextclade
+          tool_version: \${NEXTCLADE_VERSION}
+          subcommand: run
       databases:
-      - database_name: \${NEXTCLADE_DATASET_NAME}
-        database_version: \${NEXTCLADE_DATASET_VERSION}
-        files: 
-    \$(sha256sum \$dataset/* | awk '{ printf("    - filename: \\"%s\\"\\n      sha256: \\"%s\\"\\n", \$2, \$1) }')
+        - database_name: \${NEXTCLADE_DATASET_NAME}
+          database_version: \${NEXTCLADE_DATASET_VERSION}
+          files: 
+    \$(sha256sum \$dataset/* | awk '{ printf("        - filename: \\"%s\\"\\n          sha256: \\"%s\\"\\n", \$2, \$1) }')
     EOL_VERSIONS
     """
 }
