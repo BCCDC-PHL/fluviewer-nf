@@ -2,6 +2,5 @@ name: fluviewer-nf-nextclade
 channels:
 - conda-forge
 - bioconda
-- defaults
 dependencies:
 - nextclade=3.8.1

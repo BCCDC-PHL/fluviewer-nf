@@ -21,6 +21,8 @@ include { snp_calling }         from './modules/snp_calling.nf'
 include { pull_genoflu }        from './modules/genoflu.nf'
 include { checkout_genoflu }    from './modules/genoflu.nf'
 include { genoflu }             from './modules/genoflu.nf'
+include { make_pileup }             from './modules/pileup.nf'
+include { plot_pileup }             from './modules/pileup.nf'
 
 
 // prints to the screen and to the log
@@ -66,6 +68,7 @@ workflow {
     }
 
     ch_reference_db = Channel.of([file(params.blastx_subtype_db).parent, file(params.blastx_subtype_db).name]).first()
+    ch_nextclade_config = Channel.fromPath(params.nextclade_config).first()
 
     main:
 
@@ -93,12 +96,15 @@ workflow {
     // Run FluViewer 
     fluviewer(normalize_depth.out.normalized_reads.combine(ch_db))
 
+    make_pileup(fluviewer.out.alignment)
+    plot_pileup(make_pileup.out.pileup)
+
     //Collect al the relevant filesfor multiqc
     ch_fastqc_collected = fastqc.out.zip.map{ it -> [it[1], it[2]]}.collect()
     multiqc(fastp.out.json.mix( cutadapt.out.log, ch_fastqc_collected ).collect().ifEmpty([]) )
  
     //Call clades for H1 and H3 samples
-    clade_calling(fluviewer.out.ha_consensus_seq)
+    clade_calling(fluviewer.out.ha_consensus_seq, ch_nextclade_config)
      
     snp_calling(fluviewer.out.consensus_main, ch_reference_db)
    
