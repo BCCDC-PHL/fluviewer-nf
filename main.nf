@@ -18,8 +18,6 @@ include { multiqc }             from './modules/multiqc.nf'
 include { fastqc }              from './modules/fastqc.nf'
 include { clade_calling }       from './modules/clade_calling.nf'
 include { snp_calling }         from './modules/snp_calling.nf'
-include { pull_genoflu }        from './modules/genoflu.nf'
-include { checkout_genoflu }    from './modules/genoflu.nf'
 include { genoflu }             from './modules/genoflu.nf'
 include { make_pileup }             from './modules/pileup.nf'
 include { plot_pileup }             from './modules/pileup.nf'
@@ -59,7 +57,9 @@ workflow {
 
     ch_primers = Channel.fromPath(params.primer_path)
 
-    ch_db = Channel.fromPath(params.db)
+    ch_fluviewer_db = Channel.fromPath(params.db)
+    ch_snp_calling_db = Channel.of([file(params.blastx_subtype_db).parent, file(params.blastx_subtype_db).name]).first()
+
 
     if (params.samplesheet_input != 'NO_FILE') {
 	ch_fastq_input = Channel.fromPath(params.samplesheet_input).splitCsv(header: true).map{ it -> [it['ID'], it['R1'], it['R2']] }
@@ -67,7 +67,6 @@ workflow {
 	ch_fastq_input = Channel.fromFilePairs( params.fastq_search_path, flat: true ).map{ it -> [it[0].split('_')[0], it[1], it[2]] }.unique{ it -> it[0] }
     }
 
-    ch_reference_db = Channel.of([file(params.blastx_subtype_db).parent, file(params.blastx_subtype_db).name]).first()
     ch_nextclade_config = Channel.fromPath(params.nextclade_config).first()
 
     main:
@@ -94,7 +93,7 @@ workflow {
     normalize_depth(cutadapt.out.primer_trimmed_reads)
 
     // Run FluViewer 
-    fluviewer(normalize_depth.out.normalized_reads.combine(ch_db))
+    fluviewer(normalize_depth.out.normalized_reads.combine(ch_fluviewer_db))
 
     make_pileup(fluviewer.out.alignment)
     plot_pileup(make_pileup.out.pileup)
@@ -106,14 +105,9 @@ workflow {
     //Call clades for H1 and H3 samples
     clade_calling(fluviewer.out.ha_consensus_seq, ch_nextclade_config)
      
-    snp_calling(fluviewer.out.consensus_main, ch_reference_db)
-   
-    pull_genoflu(params.genoflu_github_url)
+    snp_calling(fluviewer.out.consensus_main, ch_snp_calling_db)
 
-    checkout_genoflu(pull_genoflu.out.repo, params.genoflu_version)
-
-    genoflu(fluviewer.out.consensus_main.combine(pull_genoflu.out.repo))
-
+    genoflu(fluviewer.out.consensus_main)
 
     //
     // Provenance collection processes
