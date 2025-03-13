@@ -68,14 +68,14 @@ process clade_calling {
     cat <<-EOL_VERSIONS > ${sample_id}_clade_calling_provenance.yml
     - process_name: ${task.process}
       tools:
-      - tool_name: nextclade
-        tool_version: \${NEXTCLADE_VERSION}
-        subcommand: run
+        - tool_name: nextclade
+          tool_version: \${NEXTCLADE_VERSION}
+          subcommand: run
       databases:
-      - database_name: \${NEXTCLADE_DATASET_NAME}
-        database_version: \${NEXTCLADE_DATASET_VERSION}
-        files: 
-    \$(sha256sum \$dataset/* | awk '{ printf("    - filename: \\"%s\\"\\n      sha256: \\"%s\\"\\n", \$2, \$1) }')
+        - database_name: \${NEXTCLADE_DATASET_NAME}
+          database_version: \${NEXTCLADE_DATASET_VERSION}
+          files: 
+    \$(sha256sum \$dataset/* | awk '{ printf("        - filename: \\"%s\\"\\n          sha256: \\"%s\\"\\n", \$2, \$1) }')
     EOL_VERSIONS
     """
 }
